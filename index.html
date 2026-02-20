@@ -363,22 +363,22 @@
                         <p class="help-text">The station you commute from</p>
                     </div>
 
-                    <!-- Morning Train -->
+                    <!-- Train to NYC -->
                     <div class="form-group">
-                        <label for="morning-train">Morning Commute Train <span class="required">*</span></label>
+                        <label for="morning-train">Train to NYC/Newark <span class="required">*</span></label>
                         <select id="morning-train" required disabled>
                             <option value="">Select station first...</option>
                         </select>
-                        <p class="help-text">Train you take to work/school</p>
+                        <p class="help-text">Your usual train heading to work/NYC</p>
                     </div>
 
-                    <!-- Evening Train -->
+                    <!-- Train from NYC -->
                     <div class="form-group">
-                        <label for="evening-train">Evening Commute Train <span class="required">*</span></label>
+                        <label for="evening-train">Train from NYC/Newark <span class="required">*</span></label>
                         <select id="evening-train" required disabled>
                             <option value="">Select station first...</option>
                         </select>
-                        <p class="help-text">Train you take home</p>
+                        <p class="help-text">Your usual train heading home</p>
                     </div>
 
                     <!-- Phone Number -->
@@ -478,7 +478,7 @@
 
     <script>
         // API Configuration
-        const API_BASE = 'https://train-alerts-api.livelyhill-7b9b1325.westus2.azurecontainerapps.io'; // Change to your deployed backend URL
+        const API_BASE = 'https://train-alerts-api.livelyhill-7b9b1325.westus2.azurecontainerapps.io';
 
         // NJ Transit Lines (from API documentation)
         const NJ_TRANSIT_LINES = [
