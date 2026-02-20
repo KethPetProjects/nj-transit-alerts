@@ -569,12 +569,29 @@
                 
                 const trains = await response.json();
                 
-                morningSelect.innerHTML = '<option value="">Select morning train...</option>';
-                eveningSelect.innerHTML = '<option value="">Select evening train...</option>';
+                // Get line name for filtering
+                const selectedLine = document.getElementById('train-line').selectedOptions[0].textContent;
                 
-                // Populate morning trains (outbound)
-                if (trains.outbound && trains.outbound.length > 0) {
-                    trains.outbound.forEach(train => {
+                // Filter trains by selected line
+                const filterByLine = (trainList) => {
+                    return trainList.filter(train => {
+                        // Match if train's line contains the selected line name
+                        // or if it's a common line (NEC, NJCL, etc.)
+                        const trainLine = train.line || '';
+                        return trainLine.includes(selectedLine) || 
+                               trainLine.includes(getLineAbbreviation(lineCode));
+                    });
+                };
+                
+                const filteredOutbound = filterByLine(trains.outbound || []);
+                const filteredInbound = filterByLine(trains.inbound || []);
+                
+                morningSelect.innerHTML = '<option value="">Select train to NYC...</option>';
+                eveningSelect.innerHTML = '<option value="">Select train from NYC...</option>';
+                
+                // Populate morning trains (to NYC)
+                if (filteredOutbound.length > 0) {
+                    filteredOutbound.forEach(train => {
                         const option = document.createElement('option');
                         option.value = train.id;
                         option.textContent = `${train.id} - ${train.time} to ${train.destination}`;
@@ -583,12 +600,12 @@
                         morningSelect.appendChild(option);
                     });
                 } else {
-                    morningSelect.innerHTML = '<option value="">No outbound trains found</option>';
+                    morningSelect.innerHTML = '<option value="">No trains found for this line</option>';
                 }
                 
-                // Populate evening trains (inbound)
-                if (trains.inbound && trains.inbound.length > 0) {
-                    trains.inbound.forEach(train => {
+                // Populate evening trains (from NYC)
+                if (filteredInbound.length > 0) {
+                    filteredInbound.forEach(train => {
                         const option = document.createElement('option');
                         option.value = train.id;
                         option.textContent = `${train.id} - ${train.time} to ${train.destination}`;
@@ -597,7 +614,7 @@
                         eveningSelect.appendChild(option);
                     });
                 } else {
-                    eveningSelect.innerHTML = '<option value="">No inbound trains found</option>';
+                    eveningSelect.innerHTML = '<option value="">No trains found for this line</option>';
                 }
                 
             } catch (error) {
@@ -605,6 +622,23 @@
                 morningSelect.innerHTML = '<option value="">Error loading trains - try again</option>';
                 eveningSelect.innerHTML = '<option value="">Error loading trains - try again</option>';
             }
+        }
+        
+        // Helper function to get line abbreviation for filtering
+        function getLineAbbreviation(lineCode) {
+            const lineMap = {
+                'AC': 'Atlantic City',
+                'BC': 'Bergen County',
+                'GS': 'Gladstone',
+                'MC': 'Montclair',
+                'ME': 'Morris',
+                'ML': 'Main',
+                'NC': 'Coast',
+                'NE': 'Northeast|Corridor|NEC',
+                'PV': 'Pascack',
+                'RV': 'Raritan'
+            };
+            return lineMap[lineCode] || '';
         }
 
         // Tab switching
