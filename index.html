@@ -1,0 +1,761 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NJ Transit Delay Alerts 🚂</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #E53935;
+            --primary-dark: #C62828;
+            --secondary: #1976D2;
+            --success: #43A047;
+            --warning: #FB8C00;
+            --text: #212121;
+            --text-light: #757575;
+            --bg: #FAFAFA;
+            --white: #FFFFFF;
+            --border: #E0E0E0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 2rem 2rem 4rem 2rem;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(229, 57, 53, 0.2);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .train-icon {
+            font-size: 3rem;
+            margin-bottom: 1rem;
+            display: inline-block;
+            animation: slideIn 1s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateX(-100px);
+                opacity: 0;
+            }
+            to {
+                transform: translateX(0);
+                opacity: 1;
+            }
+        }
+
+        /* Container */
+        .container {
+            max-width: 800px;
+            margin: -40px auto 40px;
+            padding: 0 1rem;
+        }
+
+        /* Card */
+        .card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .card::before {
+            content: '🚂';
+            position: absolute;
+            top: -30px;
+            right: -30px;
+            font-size: 200px;
+            opacity: 0.03;
+            transform: rotate(25deg);
+        }
+
+        /* Tabs */
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            background: none;
+            border: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-light);
+            cursor: pointer;
+            transition: all 0.3s ease;
+            border-bottom: 3px solid transparent;
+            position: relative;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .tab:hover {
+            color: var(--primary);
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        /* Tab Content */
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-in;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(10px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* Form */
+        .form-section {
+            margin-bottom: 2rem;
+        }
+
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            margin-bottom: 1rem;
+            color: var(--text);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 0.5rem;
+            color: var(--text);
+        }
+
+        .required {
+            color: var(--primary);
+        }
+
+        select,
+        input[type="tel"] {
+            width: 100%;
+            padding: 1rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.3s ease;
+            background: var(--white);
+        }
+
+        select:focus,
+        input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 4px rgba(229, 57, 53, 0.1);
+        }
+
+        .train-select {
+            background: linear-gradient(to right, var(--white) 90%, var(--bg) 100%);
+            cursor: pointer;
+        }
+
+        .help-text {
+            font-size: 0.9rem;
+            color: var(--text-light);
+            margin-top: 0.5rem;
+            font-style: italic;
+        }
+
+        /* Button */
+        .btn {
+            background: linear-gradient(135deg, var(--primary), var(--primary-dark));
+            color: white;
+            border: none;
+            padding: 1.2rem 3rem;
+            font-size: 1.1rem;
+            font-weight: 700;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 6px 20px rgba(229, 57, 53, 0.3);
+            font-family: 'Outfit', sans-serif;
+            width: 100%;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 10px 30px rgba(229, 57, 53, 0.4);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn:disabled {
+            background: #BDBDBD;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--text-light), #616161);
+        }
+
+        /* Info Box */
+        .info-box {
+            background: linear-gradient(135deg, #E3F2FD, #BBDEFB);
+            border-left: 4px solid var(--secondary);
+            padding: 1.5rem;
+            border-radius: 10px;
+            margin-bottom: 2rem;
+        }
+
+        .info-box strong {
+            color: var(--secondary);
+        }
+
+        /* Verification Box */
+        .verification-box {
+            background: #FFF3E0;
+            border: 2px solid var(--warning);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            margin-top: 2rem;
+            display: none;
+        }
+
+        .verification-box.show {
+            display: block;
+            animation: slideDown 0.4s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .code-input {
+            width: 200px;
+            margin: 1rem auto;
+            text-align: center;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 2rem;
+            letter-spacing: 10px;
+            font-weight: 600;
+        }
+
+        /* Success Message */
+        .success-message {
+            background: linear-gradient(135deg, #C8E6C9, #A5D6A7);
+            border: 2px solid var(--success);
+            padding: 2rem;
+            border-radius: 15px;
+            text-align: center;
+            display: none;
+        }
+
+        .success-message.show {
+            display: block;
+            animation: bounceIn 0.6s ease-out;
+        }
+
+        @keyframes bounceIn {
+            0% {
+                transform: scale(0.8);
+                opacity: 0;
+            }
+            50% {
+                transform: scale(1.05);
+            }
+            100% {
+                transform: scale(1);
+                opacity: 1;
+            }
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        /* Disclaimer */
+        .disclaimer {
+            background: #FFFDE7;
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            margin-top: 2rem;
+            border-radius: 8px;
+            font-size: 0.85rem;
+            color: var(--text-light);
+        }
+
+        .disclaimer strong {
+            color: var(--text);
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .card {
+                padding: 2rem 1.5rem;
+            }
+
+            .tabs {
+                flex-direction: column;
+                gap: 0;
+            }
+
+            .tab {
+                padding: 0.75rem 1rem;
+                text-align: left;
+            }
+        }
+
+        /* Train Animation */
+        .train-schedule {
+            background: #F5F5F5;
+            padding: 1rem;
+            border-radius: 10px;
+            margin-bottom: 1.5rem;
+            font-family: 'JetBrains Mono', monospace;
+            font-size: 0.9rem;
+        }
+
+        .train-schedule-item {
+            display: flex;
+            justify-content: space-between;
+            padding: 0.5rem 0;
+            border-bottom: 1px dashed var(--border);
+        }
+
+        .train-schedule-item:last-child {
+            border-bottom: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="train-icon">🚂</div>
+        <h1>NJ Transit Delay Alerts</h1>
+        <p>Never miss your train. Get instant delay notifications.</p>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <!-- Tabs -->
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('subscribe')">📱 Subscribe</button>
+                <button class="tab" onclick="showTab('unsubscribe')">🔕 Unsubscribe</button>
+            </div>
+
+            <!-- Subscribe Tab -->
+            <div class="tab-content active" id="subscribe-tab">
+                <!-- Active Subscription Display (shown when already subscribed) -->
+                <div class="info-box" id="active-subscription" style="display: none; background: linear-gradient(135deg, #C8E6C9, #A5D6A7); border-left-color: var(--success);">
+                    <strong>✅ You're currently subscribed!</strong>
+                    <div class="train-schedule" style="margin-top: 1rem;">
+                        <div class="train-schedule-item">
+                            <span>Morning:</span>
+                            <span id="active-morning">-</span>
+                        </div>
+                        <div class="train-schedule-item">
+                            <span>Evening:</span>
+                            <span id="active-evening">-</span>
+                        </div>
+                        <div class="train-schedule-item">
+                            <span>Phone:</span>
+                            <span id="active-phone">-</span>
+                        </div>
+                    </div>
+                    <button class="btn" style="margin-top: 1rem; font-size: 0.9rem; padding: 0.8rem 2rem;" onclick="updateSubscription()">Update My Trains</button>
+                </div>
+
+                <div class="info-box" id="new-subscription-info">
+                    <strong>How it works:</strong> Select your regular morning and evening trains, enter your phone number, and we'll text you:
+                    <ul style="margin: 0.5rem 0 0 1.5rem;">
+                        <li>30 minutes before departure if your train is on-time ✅</li>
+                        <li>Immediately if there are any delays or cancellations ⚠️</li>
+                    </ul>
+                </div>
+
+                <form id="subscribe-form">
+                    <!-- Morning Train -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <span>☀️</span>
+                            <span>Morning Commute</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="morning-train">Select Your Morning Train <span class="required">*</span></label>
+                            <select id="morning-train" class="train-select" required>
+                                <option value="">-- Choose a train --</option>
+                                <option value="3800">Train 3800 - 6:05 AM (Trenton → NY Penn)</option>
+                                <option value="3802">Train 3802 - 6:35 AM (Trenton → NY Penn)</option>
+                                <option value="3804">Train 3804 - 7:05 AM (Trenton → NY Penn)</option>
+                                <option value="3806">Train 3806 - 7:35 AM (Trenton → NY Penn)</option>
+                                <option value="3808">Train 3808 - 8:05 AM (Trenton → NY Penn)</option>
+                                <option value="3810">Train 3810 - 8:35 AM (Trenton → NY Penn)</option>
+                            </select>
+                            <p class="help-text">We'll monitor this train every morning</p>
+                        </div>
+                    </div>
+
+                    <!-- Evening Train -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <span>🌙</span>
+                            <span>Evening Commute</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="evening-train">Select Your Evening Train <span class="required">*</span></label>
+                            <select id="evening-train" class="train-select" required>
+                                <option value="">-- Choose a train --</option>
+                                <option value="3801">Train 3801 - 4:15 PM (NY Penn → Trenton)</option>
+                                <option value="3803">Train 3803 - 4:45 PM (NY Penn → Trenton)</option>
+                                <option value="3805">Train 3805 - 5:15 PM (NY Penn → Trenton)</option>
+                                <option value="3807">Train 3807 - 5:45 PM (NY Penn → Trenton)</option>
+                                <option value="3809">Train 3809 - 6:15 PM (NY Penn → Trenton)</option>
+                                <option value="3811">Train 3811 - 6:45 PM (NY Penn → Trenton)</option>
+                            </select>
+                            <p class="help-text">We'll monitor this train every evening</p>
+                        </div>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <span>📱</span>
+                            <span>Contact Information</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label for="phone">Your Phone Number <span class="required">*</span></label>
+                            <input type="tel" id="phone" placeholder="(555) 123-4567" required>
+                            <p class="help-text">We'll send alerts to this number via SMS</p>
+                        </div>
+                    </div>
+
+                    <!-- Notification Preferences -->
+                    <div class="form-section">
+                        <div class="section-title">
+                            <span>🔔</span>
+                            <span>Notification Preferences</span>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="delay-alerts" checked style="width: auto; height: 20px; cursor: pointer;">
+                                <span>⚠️ Send delay & cancellation alerts (immediate)</span>
+                            </label>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                                <input type="checkbox" id="ontime-alerts" checked style="width: auto; height: 20px; cursor: pointer;">
+                                <span>✅ Send on-time confirmation (30 min before departure)</span>
+                            </label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn">Subscribe to Alerts</button>
+                </form>
+
+                <!-- Verification Box (hidden initially) -->
+                <div class="verification-box" id="verification-box">
+                    <h3>📲 Verify Your Phone Number</h3>
+                    <p>We sent a 6-digit code to your phone. Enter it below:</p>
+                    <input type="text" class="code-input" id="verification-code" maxlength="6" placeholder="000000">
+                    <button class="btn" onclick="verifyCode()">Verify & Activate</button>
+                </div>
+
+                <!-- Success Message (hidden initially) -->
+                <div class="success-message" id="success-message">
+                    <div class="success-icon">✅</div>
+                    <h2>You're All Set!</h2>
+                    <p>We'll notify you about delays on your selected trains.</p>
+                    <div class="train-schedule">
+                        <div class="train-schedule-item">
+                            <span>Morning:</span>
+                            <span id="success-morning">Train 3804</span>
+                        </div>
+                        <div class="train-schedule-item">
+                            <span>Evening:</span>
+                            <span id="success-evening">Train 3805</span>
+                        </div>
+                        <div class="train-schedule-item">
+                            <span>Phone:</span>
+                            <span id="success-phone">(555) 123-4567</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Disclaimer -->
+                <div class="disclaimer">
+                    <strong>Disclaimer:</strong> This service uses data from NJ Transit. Delay information may not be real-time and should be verified with official NJ Transit sources. This is an independent service not affiliated with or endorsed by NJ Transit.
+                </div>
+
+                <!-- Footer Links -->
+                <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #E0E0E0; color: var(--text-light); font-size: 0.9rem;">
+                    <a href="privacy.html" style="color: var(--primary); text-decoration: none; margin: 0 1rem;">Privacy Policy</a>
+                    <span>•</span>
+                    <a href="terms.html" style="color: var(--primary); text-decoration: none; margin: 0 1rem;">Terms & Conditions</a>
+                </div>
+            </div>
+
+            <!-- Unsubscribe Tab -->
+            <div class="tab-content" id="unsubscribe-tab">
+                <div class="info-box">
+                    <strong>Unsubscribe:</strong> Enter your phone number and we'll send you a verification code to confirm the cancellation.
+                </div>
+
+                <form id="unsubscribe-form">
+                    <div class="form-group">
+                        <label for="unsubscribe-phone">Your Phone Number <span class="required">*</span></label>
+                        <input type="tel" id="unsubscribe-phone" placeholder="(555) 123-4567" required>
+                        <p class="help-text">The phone number you used to subscribe</p>
+                    </div>
+
+                    <button type="submit" class="btn btn-secondary">Request Unsubscribe</button>
+                </form>
+
+                <div class="verification-box" id="unsubscribe-verification-box">
+                    <h3>📲 Verify Cancellation</h3>
+                    <p>We sent a verification code to your phone. Enter it to confirm unsubscribe:</p>
+                    <input type="text" class="code-input" id="unsubscribe-code" maxlength="6" placeholder="000000">
+                    <button class="btn btn-secondary" onclick="confirmUnsubscribe()">Confirm Unsubscribe</button>
+                </div>
+
+                <div class="success-message" id="unsubscribe-success">
+                    <div class="success-icon">👋</div>
+                    <h2>Unsubscribed Successfully</h2>
+                    <p>You will no longer receive delay alerts. You can re-subscribe anytime!</p>
+                </div>
+
+                <!-- Footer Links -->
+                <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #E0E0E0; color: var(--text-light); font-size: 0.9rem;">
+                    <a href="privacy.html" style="color: var(--primary); text-decoration: none; margin: 0 1rem;">Privacy Policy</a>
+                    <span>•</span>
+                    <a href="terms.html" style="color: var(--primary); text-decoration: none; margin: 0 1rem;">Terms & Conditions</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Tab switching
+        function showTab(tabName) {
+            // Update tab buttons
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+
+            // Update tab content
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        // Subscribe form submission
+        document.getElementById('subscribe-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const morning = document.getElementById('morning-train').value;
+            const evening = document.getElementById('evening-train').value;
+            const phone = document.getElementById('phone').value;
+
+            if (!morning || !evening || !phone) {
+                alert('Please fill in all fields!');
+                return;
+            }
+
+            // Hide form, show verification
+            document.getElementById('subscribe-form').style.display = 'none';
+            document.getElementById('verification-box').classList.add('show');
+
+            // In real app: Send API request to backend
+            console.log('Subscribe request:', { morning, evening, phone });
+        });
+
+        // Verification
+        function verifyCode() {
+            const code = document.getElementById('verification-code').value;
+            
+            if (code.length !== 6) {
+                alert('Please enter a 6-digit code');
+                return;
+            }
+
+            // Hide verification, show success
+            document.getElementById('verification-box').classList.remove('show');
+            document.getElementById('success-message').classList.add('show');
+
+            // Update success message with selected trains
+            const morningTrain = document.getElementById('morning-train').selectedOptions[0].text;
+            const eveningTrain = document.getElementById('evening-train').selectedOptions[0].text;
+            const phone = document.getElementById('phone').value;
+
+            document.getElementById('success-morning').textContent = morningTrain;
+            document.getElementById('success-evening').textContent = eveningTrain;
+            document.getElementById('success-phone').textContent = phone;
+
+            // Store subscription in localStorage (for demo - real app would use backend)
+            localStorage.setItem('subscription', JSON.stringify({
+                morning: morningTrain,
+                evening: eveningTrain,
+                phone: phone,
+                active: true
+            }));
+
+            // In real app: Send verification to backend
+            console.log('Verification code:', code);
+        }
+
+        // Update subscription
+        function updateSubscription() {
+            if (confirm('Do you want to update your train selections? This will restart the subscription process.')) {
+                // Clear current subscription status
+                document.getElementById('active-subscription').style.display = 'none';
+                document.getElementById('new-subscription-info').style.display = 'block';
+                document.getElementById('subscribe-form').style.display = 'block';
+                document.getElementById('success-message').classList.remove('show');
+                
+                // Reset form
+                document.getElementById('subscribe-form').reset();
+            }
+        }
+
+        // Check if user has active subscription on page load
+        window.addEventListener('load', function() {
+            const subscription = JSON.parse(localStorage.getItem('subscription') || 'null');
+            if (subscription && subscription.active) {
+                // Show active subscription
+                document.getElementById('active-subscription').style.display = 'block';
+                document.getElementById('new-subscription-info').style.display = 'none';
+                document.getElementById('subscribe-form').style.display = 'none';
+                
+                // Populate active subscription details
+                document.getElementById('active-morning').textContent = subscription.morning;
+                document.getElementById('active-evening').textContent = subscription.evening;
+                document.getElementById('active-phone').textContent = subscription.phone;
+            }
+        });
+
+        // Unsubscribe form
+        document.getElementById('unsubscribe-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const phone = document.getElementById('unsubscribe-phone').value;
+
+            if (!phone) {
+                alert('Please enter your phone number!');
+                return;
+            }
+
+            document.getElementById('unsubscribe-form').style.display = 'none';
+            document.getElementById('unsubscribe-verification-box').classList.add('show');
+
+            console.log('Unsubscribe request:', { phone });
+        });
+
+        // Confirm unsubscribe
+        function confirmUnsubscribe() {
+            const code = document.getElementById('unsubscribe-code').value;
+            
+            if (code.length !== 6) {
+                alert('Please enter a 6-digit code');
+                return;
+            }
+
+            document.getElementById('unsubscribe-verification-box').classList.remove('show');
+            document.getElementById('unsubscribe-success').classList.add('show');
+
+            // Clear subscription from localStorage
+            localStorage.removeItem('subscription');
+
+            // Reset subscribe tab to new subscription state
+            document.getElementById('active-subscription').style.display = 'none';
+            document.getElementById('new-subscription-info').style.display = 'block';
+            document.getElementById('subscribe-form').style.display = 'block';
+            document.getElementById('success-message').classList.remove('show');
+
+            console.log('Unsubscribe verification:', code);
+        }
+
+        // Auto-format phone number
+        document.getElementById('phone').addEventListener('input', formatPhone);
+        document.getElementById('unsubscribe-phone').addEventListener('input', formatPhone);
+
+        function formatPhone(e) {
+            let value = e.target.value.replace(/\D/g, '');
+            if (value.length > 10) value = value.slice(0, 10);
+            
+            if (value.length >= 6) {
+                e.target.value = `(${value.slice(0,3)}) ${value.slice(3,6)}-${value.slice(6)}`;
+            } else if (value.length >= 3) {
+                e.target.value = `(${value.slice(0,3)}) ${value.slice(3)}`;
+            } else {
+                e.target.value = value;
+            }
+        }
+    </script>
+</body>
+</html>
