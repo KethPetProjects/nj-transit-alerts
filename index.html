@@ -1,0 +1,921 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NJ Transit Delay Alerts 🚂</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --primary: #E53935;
+            --primary-dark: #C62828;
+            --secondary: #1976D2;
+            --success: #43A047;
+            --warning: #FB8C00;
+            --text: #212121;
+            --text-light: #757575;
+            --bg: #FAFAFA;
+            --white: #FFFFFF;
+            --border: #E0E0E0;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Outfit', sans-serif;
+            background: var(--bg);
+            color: var(--text);
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .header {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            padding: 2rem 2rem 4rem 2rem;
+            text-align: center;
+            box-shadow: 0 4px 12px rgba(229, 57, 53, 0.2);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 0.5rem;
+        }
+
+        .header p {
+            font-size: 1.1rem;
+            opacity: 0.95;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: -40px auto 40px;
+            padding: 0 1rem;
+        }
+
+        .card {
+            background: var(--white);
+            border-radius: 20px;
+            padding: 3rem;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+        }
+
+        .tabs {
+            display: flex;
+            gap: 1rem;
+            margin-bottom: 2rem;
+            border-bottom: 2px solid var(--border);
+        }
+
+        .tab {
+            padding: 1rem 2rem;
+            cursor: pointer;
+            border: none;
+            background: none;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--text-light);
+            transition: all 0.3s;
+            border-bottom: 3px solid transparent;
+            margin-bottom: -2px;
+        }
+
+        .tab.active {
+            color: var(--primary);
+            border-bottom-color: var(--primary);
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .form-group {
+            margin-bottom: 1.5rem;
+        }
+
+        label {
+            display: block;
+            margin-bottom: 0.5rem;
+            font-weight: 600;
+            color: var(--text);
+        }
+
+        .required {
+            color: var(--primary);
+        }
+
+        select, input {
+            width: 100%;
+            padding: 0.875rem;
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            font-size: 1rem;
+            font-family: 'Outfit', sans-serif;
+            transition: all 0.3s;
+            background: var(--white);
+        }
+
+        select:focus, input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(229, 57, 53, 0.1);
+        }
+
+        .help-text {
+            font-size: 0.875rem;
+            color: var(--text-light);
+            margin-top: 0.25rem;
+        }
+
+        .info-box {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            border-left: 4px solid var(--secondary);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-bottom: 1.5rem;
+        }
+
+        .info-box strong {
+            color: var(--secondary);
+        }
+
+        .notification-prefs {
+            background: var(--bg);
+            padding: 1.25rem;
+            border-radius: 12px;
+            margin-bottom: 1.5rem;
+        }
+
+        .notification-prefs h3 {
+            margin-bottom: 1rem;
+            color: var(--text);
+            font-size: 1.1rem;
+        }
+
+        .checkbox-group {
+            display: flex;
+            align-items: center;
+            margin-bottom: 0.75rem;
+        }
+
+        .checkbox-group input[type="checkbox"] {
+            width: auto;
+            margin-right: 0.75rem;
+            cursor: pointer;
+        }
+
+        .checkbox-group label {
+            margin-bottom: 0;
+            font-weight: 400;
+            cursor: pointer;
+        }
+
+        .btn {
+            width: 100%;
+            padding: 1rem 2rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Outfit', sans-serif;
+        }
+
+        .btn-primary {
+            background: linear-gradient(135deg, var(--primary) 0%, var(--primary-dark) 100%);
+            color: white;
+            box-shadow: 0 4px 15px rgba(229, 57, 53, 0.3);
+        }
+
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(229, 57, 53, 0.4);
+        }
+
+        .btn-secondary {
+            background: linear-gradient(135deg, var(--text-light) 0%, #616161 100%);
+            color: white;
+        }
+
+        .btn-secondary:hover {
+            transform: translateY(-2px);
+        }
+
+        .verification-box, .success-message {
+            display: none;
+            text-align: center;
+            padding: 2rem;
+            border-radius: 12px;
+            margin-top: 2rem;
+        }
+
+        .verification-box.show, .success-message.show {
+            display: block;
+            animation: fadeIn 0.3s;
+        }
+
+        .verification-box {
+            background: linear-gradient(135deg, #FFF3E0 0%, #FFE0B2 100%);
+        }
+
+        .verification-box h3 {
+            color: var(--warning);
+            margin-bottom: 1rem;
+        }
+
+        .code-input {
+            width: 200px;
+            text-align: center;
+            font-size: 1.5rem;
+            letter-spacing: 0.5rem;
+            font-weight: 600;
+            margin: 1rem auto;
+        }
+
+        .success-message {
+            background: linear-gradient(135deg, #E8F5E9 0%, #C8E6C9 100%);
+        }
+
+        .success-icon {
+            font-size: 4rem;
+            margin-bottom: 1rem;
+        }
+
+        .success-message h2 {
+            color: var(--success);
+            margin-bottom: 1rem;
+        }
+
+        .train-details {
+            background: var(--white);
+            padding: 1.5rem;
+            border-radius: 12px;
+            margin-top: 1rem;
+            border: 2px solid var(--success);
+        }
+
+        .train-details p {
+            margin: 0.5rem 0;
+        }
+
+        .disclaimer {
+            background: #FFF9C4;
+            border-left: 4px solid var(--warning);
+            padding: 1rem;
+            border-radius: 8px;
+            margin-top: 2rem;
+            font-size: 0.875rem;
+        }
+
+        .loading {
+            text-align: center;
+            padding: 2rem;
+            color: var(--text-light);
+        }
+
+        .spinner {
+            border: 3px solid var(--border);
+            border-top: 3px solid var(--primary);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 1rem;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        @media (max-width: 768px) {
+            .header h1 {
+                font-size: 1.75rem;
+            }
+            .card {
+                padding: 1.5rem;
+            }
+            .tabs {
+                flex-direction: column;
+                gap: 0;
+            }
+            .tab {
+                padding: 0.75rem 1rem;
+                text-align: left;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div class="train-icon">🚂</div>
+        <h1>NJ Transit Delay Alerts</h1>
+        <p>Never miss your train • Get real-time delay notifications</p>
+    </div>
+
+    <div class="container">
+        <div class="card">
+            <div class="tabs">
+                <button class="tab active" onclick="showTab('subscribe')">Subscribe</button>
+                <button class="tab" onclick="showTab('unsubscribe')">Unsubscribe</button>
+            </div>
+
+            <!-- Subscribe Tab -->
+            <div class="tab-content active" id="subscribe-tab">
+                <div class="info-box">
+                    <strong>How it works:</strong> Select your home station and the trains you take. We'll send you SMS alerts for delays, cancellations, and on-time confirmations.
+                </div>
+
+                <form id="subscribe-form">
+                    <!-- Line/Corridor Selection FIRST -->
+                    <div class="form-group">
+                        <label for="train-line">Your Train Line <span class="required">*</span></label>
+                        <select id="train-line" required>
+                            <option value="">Select your line...</option>
+                        </select>
+                        <p class="help-text">The line/corridor you commute on</p>
+                    </div>
+
+                    <!-- Station Selection (filtered by line) -->
+                    <div class="form-group">
+                        <label for="home-station">Your Home Station <span class="required">*</span></label>
+                        <select id="home-station" required disabled>
+                            <option value="">Select your line first...</option>
+                        </select>
+                        <p class="help-text">The station you commute from</p>
+                    </div>
+
+                    <!-- Morning Train -->
+                    <div class="form-group">
+                        <label for="morning-train">Morning Commute Train <span class="required">*</span></label>
+                        <select id="morning-train" required disabled>
+                            <option value="">Select station first...</option>
+                        </select>
+                        <p class="help-text">Train you take to work/school</p>
+                    </div>
+
+                    <!-- Evening Train -->
+                    <div class="form-group">
+                        <label for="evening-train">Evening Commute Train <span class="required">*</span></label>
+                        <select id="evening-train" required disabled>
+                            <option value="">Select station first...</option>
+                        </select>
+                        <p class="help-text">Train you take home</p>
+                    </div>
+
+                    <!-- Phone Number -->
+                    <div class="form-group">
+                        <label for="phone">Your Phone Number <span class="required">*</span></label>
+                        <input type="tel" id="phone" placeholder="(555) 123-4567" required>
+                        <p class="help-text">We'll send alerts to this number</p>
+                    </div>
+
+                    <!-- Notification Preferences -->
+                    <div class="notification-prefs">
+                        <h3>📱 Notification Preferences</h3>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="delay-alerts" checked>
+                            <label for="delay-alerts">Delay & cancellation alerts (sent immediately)</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="ontime-alerts" checked>
+                            <label for="ontime-alerts">On-time confirmations (30 min before departure)</label>
+                        </div>
+                    </div>
+
+                    <button type="submit" class="btn btn-primary">Subscribe to Alerts</button>
+                </form>
+
+                <div class="verification-box" id="verification-box">
+                    <h3>📲 Verify Your Number</h3>
+                    <p>We sent a 6-digit code to your phone. Enter it below:</p>
+                    <input type="text" class="code-input" id="verification-code" maxlength="6" placeholder="000000">
+                    <button class="btn btn-primary" onclick="verifyCode()">Verify & Activate</button>
+                </div>
+
+                <div class="success-message" id="success-message">
+                    <div class="success-icon">✅</div>
+                    <h2>You're All Set!</h2>
+                    <p>Your delay alerts are now active.</p>
+                    <div class="train-details">
+                        <p><strong>Station:</strong> <span id="success-station"></span></p>
+                        <p><strong>Line:</strong> <span id="success-line"></span></p>
+                        <p><strong>Morning Train:</strong> <span id="success-morning"></span></p>
+                        <p><strong>Evening Train:</strong> <span id="success-evening"></span></p>
+                        <p><strong>Phone:</strong> <span id="success-phone"></span></p>
+                    </div>
+                </div>
+
+                <!-- Disclaimer -->
+                <div class="disclaimer">
+                    <strong>Disclaimer:</strong> This service uses data from NJ Transit. Delay information may not be real-time and should be verified with official NJ Transit sources. This is an independent service not affiliated with or endorsed by NJ Transit.
+                </div>
+
+                <!-- Footer Links -->
+                <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #E0E0E0; color: var(--text-light); font-size: 0.9rem;">
+                    <a href="privacy.html" style="color: var(--primary); text-decoration: none; margin: 0 1rem;">Privacy Policy</a>
+                    <span>•</span>
+                    <a href="terms.html" style="color: var(--primary); text-decoration: none; margin: 0 1rem;">Terms & Conditions</a>
+                </div>
+            </div>
+
+            <!-- Unsubscribe Tab -->
+            <div class="tab-content" id="unsubscribe-tab">
+                <div class="info-box">
+                    <strong>Unsubscribe:</strong> Enter your phone number and we'll send you a verification code to confirm the cancellation.
+                </div>
+
+                <form id="unsubscribe-form">
+                    <div class="form-group">
+                        <label for="unsubscribe-phone">Your Phone Number <span class="required">*</span></label>
+                        <input type="tel" id="unsubscribe-phone" placeholder="(555) 123-4567" required>
+                        <p class="help-text">The phone number you used to subscribe</p>
+                    </div>
+
+                    <button type="submit" class="btn btn-secondary">Request Unsubscribe</button>
+                </form>
+
+                <div class="verification-box" id="unsubscribe-verification-box">
+                    <h3>📲 Verify Cancellation</h3>
+                    <p>We sent a verification code to your phone. Enter it to confirm unsubscribe:</p>
+                    <input type="text" class="code-input" id="unsubscribe-code" maxlength="6" placeholder="000000">
+                    <button class="btn btn-secondary" onclick="confirmUnsubscribe()">Confirm Unsubscribe</button>
+                </div>
+
+                <div class="success-message" id="unsubscribe-success">
+                    <div class="success-icon">👋</div>
+                    <h2>Unsubscribed Successfully</h2>
+                    <p>You will no longer receive delay alerts. You can re-subscribe anytime!</p>
+                </div>
+
+                <!-- Footer Links -->
+                <div style="text-align: center; margin-top: 2rem; padding-top: 2rem; border-top: 1px solid #E0E0E0; color: var(--text-light); font-size: 0.9rem;">
+                    <a href="privacy.html" style="color: var(--primary); text-decoration: none; margin: 0 1rem;">Privacy Policy</a>
+                    <span>•</span>
+                    <a href="terms.html" style="color: var(--primary); text-decoration: none; margin: 0 1rem;">Terms & Conditions</a>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // API Configuration
+        const API_BASE = 'http://localhost:8000'; // Change to your deployed backend URL
+
+        // NJ Transit Lines (from API documentation)
+        const NJ_TRANSIT_LINES = [
+            { code: 'AC', name: 'Atlantic City Line' },
+            { code: 'BC', name: 'Bergen County Line' },
+            { code: 'GS', name: 'Gladstone Branch' },
+            { code: 'MC', name: 'Montclair-Boonton Line' },
+            { code: 'ME', name: 'Morris & Essex Line' },
+            { code: 'ML', name: 'Main Line' },
+            { code: 'NC', name: 'North Jersey Coast Line' },
+            { code: 'NE', name: 'Northeast Corridor Line' },
+            { code: 'PV', name: 'Pascack Valley Line' },
+            { code: 'RV', name: 'Raritan Valley Line' }
+        ];
+
+        // Load lines on page load
+        document.addEventListener('DOMContentLoaded', loadLines);
+
+        async function loadLines() {
+            const lineSelect = document.getElementById('train-line');
+            
+            lineSelect.innerHTML = '<option value="">Select your line...</option>';
+            NJ_TRANSIT_LINES.forEach(line => {
+                const option = document.createElement('option');
+                option.value = line.code;
+                option.textContent = line.name;
+                lineSelect.appendChild(option);
+            });
+        }
+
+        // Line selection handler - loads stations for that line
+        document.getElementById('train-line').addEventListener('change', function() {
+            const stationSelect = document.getElementById('home-station');
+            const lineCode = this.value;
+            
+            if (lineCode) {
+                stationSelect.disabled = false;
+                
+                // Get stations for this line
+                const stations = getStationsByLine(lineCode);
+                
+                stationSelect.innerHTML = '<option value="">Select your station...</option>';
+                stations.forEach(station => {
+                    const option = document.createElement('option');
+                    option.value = station.code;
+                    option.textContent = station.name;
+                    option.dataset.name = station.name;
+                    stationSelect.appendChild(option);
+                });
+            } else {
+                stationSelect.disabled = true;
+                stationSelect.innerHTML = '<option value="">Select your line first...</option>';
+                document.getElementById('morning-train').disabled = true;
+                document.getElementById('evening-train').disabled = true;
+            }
+        });
+
+        // Station selection handler
+        document.getElementById('home-station').addEventListener('change', async function() {
+            const station = this.value;
+            const line = document.getElementById('train-line').value;
+            
+            if (station && line) {
+                await loadTrains(station, line);
+            } else {
+                document.getElementById('morning-train').disabled = true;
+                document.getElementById('evening-train').disabled = true;
+            }
+        });
+
+        async function loadTrains(stationCode, lineCode) {
+            const morningSelect = document.getElementById('morning-train');
+            const eveningSelect = document.getElementById('evening-train');
+            
+            morningSelect.disabled = false;
+            eveningSelect.disabled = false;
+            
+            morningSelect.innerHTML = '<option value="">Loading trains...</option>';
+            eveningSelect.innerHTML = '<option value="">Loading trains...</option>';
+            
+            try {
+                // In production: const response = await fetch(`${API_BASE}/trains?station=${stationCode}&line=${lineCode}`);
+                const trains = getMockTrains(stationCode, lineCode);
+                
+                morningSelect.innerHTML = '<option value="">Select morning train...</option>';
+                eveningSelect.innerHTML = '<option value="">Select evening train...</option>';
+                
+                trains.outbound.forEach(train => {
+                    const option = document.createElement('option');
+                    option.value = train.id;
+                    option.textContent = `${train.id} - ${train.time} to ${train.destination}`;
+                    option.dataset.time = train.time;
+                    option.dataset.destination = train.destination;
+                    morningSelect.appendChild(option);
+                });
+                
+                trains.inbound.forEach(train => {
+                    const option = document.createElement('option');
+                    option.value = train.id;
+                    option.textContent = `${train.id} - ${train.time} to ${train.destination}`;
+                    option.dataset.time = train.time;
+                    option.dataset.destination = train.destination;
+                    eveningSelect.appendChild(option);
+                });
+            } catch (error) {
+                console.error('Error loading trains:', error);
+                morningSelect.innerHTML = '<option value="">Error loading trains</option>';
+                eveningSelect.innerHTML = '<option value="">Error loading trains</option>';
+            }
+        }
+
+        // Tab switching
+        function showTab(tabName) {
+            document.querySelectorAll('.tab').forEach(tab => tab.classList.remove('active'));
+            event.target.classList.add('active');
+            
+            document.querySelectorAll('.tab-content').forEach(content => content.classList.remove('active'));
+            document.getElementById(tabName + '-tab').classList.add('active');
+        }
+
+        // Subscribe form submission
+        document.getElementById('subscribe-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const stationCode = document.getElementById('home-station').value;
+            const stationName = document.getElementById('home-station').selectedOptions[0].dataset.name;
+            const lineCode = document.getElementById('train-line').value;
+            const lineName = document.getElementById('train-line').selectedOptions[0].textContent;
+            const morningTrain = document.getElementById('morning-train').value;
+            const eveningTrain = document.getElementById('evening-train').value;
+            const phone = document.getElementById('phone').value;
+            const delayAlerts = document.getElementById('delay-alerts').checked;
+            const ontimeAlerts = document.getElementById('ontime-alerts').checked;
+            
+            if (!stationCode || !lineCode || !morningTrain || !eveningTrain || !phone) {
+                alert('Please fill in all required fields!');
+                return;
+            }
+            
+            // Hide form, show verification
+            document.getElementById('subscribe-form').style.display = 'none';
+            document.getElementById('verification-box').classList.add('show');
+            
+            // In real app: Send API request to backend
+            console.log('Subscribe request:', { stationCode, lineCode, morningTrain, eveningTrain, phone, delayAlerts, ontimeAlerts });
+            
+            // Store for success message
+            sessionStorage.setItem('subscription', JSON.stringify({
+                station: stationName,
+                line: lineName,
+                morning: document.getElementById('morning-train').selectedOptions[0].textContent,
+                evening: document.getElementById('evening-train').selectedOptions[0].textContent,
+                phone: phone
+            }));
+        });
+
+        // Verification
+        function verifyCode() {
+            const code = document.getElementById('verification-code').value;
+            
+            if (code.length !== 6) {
+                alert('Please enter a 6-digit code');
+                return;
+            }
+            
+            // Hide verification, show success
+            document.getElementById('verification-box').classList.remove('show');
+            document.getElementById('success-message').classList.add('show');
+            
+            // Display subscription details
+            const sub = JSON.parse(sessionStorage.getItem('subscription'));
+            document.getElementById('success-station').textContent = sub.station;
+            document.getElementById('success-line').textContent = sub.line;
+            document.getElementById('success-morning').textContent = sub.morning;
+            document.getElementById('success-evening').textContent = sub.evening;
+            document.getElementById('success-phone').textContent = sub.phone;
+        }
+
+        // Unsubscribe form
+        document.getElementById('unsubscribe-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const phone = document.getElementById('unsubscribe-phone').value;
+            
+            if (!phone) {
+                alert('Please enter your phone number');
+                return;
+            }
+            
+            document.getElementById('unsubscribe-form').style.display = 'none';
+            document.getElementById('unsubscribe-verification-box').classList.add('show');
+            
+            console.log('Unsubscribe request:', { phone });
+        });
+
+        function confirmUnsubscribe() {
+            const code = document.getElementById('unsubscribe-code').value;
+            
+            if (code.length !== 6) {
+                alert('Please enter a 6-digit code');
+                return;
+            }
+            
+            document.getElementById('unsubscribe-verification-box').classList.remove('show');
+            document.getElementById('unsubscribe-success').classList.add('show');
+        }
+
+        // Phone formatting - improved to allow backspace
+        document.getElementById('phone').addEventListener('input', formatPhone);
+        document.getElementById('unsubscribe-phone').addEventListener('input', formatPhone);
+        
+        function formatPhone(e) {
+            // Get cursor position before formatting
+            const cursorPosition = e.target.selectionStart;
+            const oldValue = e.target.value;
+            
+            // Remove all non-digits
+            let value = e.target.value.replace(/\D/g, '');
+            
+            // Limit to 10 digits
+            if (value.length > 10) {
+                value = value.slice(0, 10);
+            }
+            
+            // Format based on length
+            let formatted = '';
+            if (value.length === 0) {
+                formatted = '';
+            } else if (value.length <= 3) {
+                formatted = value;
+            } else if (value.length <= 6) {
+                formatted = `(${value.slice(0, 3)}) ${value.slice(3)}`;
+            } else {
+                formatted = `(${value.slice(0, 3)}) ${value.slice(3, 6)}-${value.slice(6)}`;
+            }
+            
+            e.target.value = formatted;
+            
+            // Don't adjust cursor if user is deleting
+            if (oldValue.length > formatted.length) {
+                return;
+            }
+        }
+
+        // Mock data functions (replace with real API calls)
+        function getStationsByLine(lineCode) {
+            // Stations grouped by line - in production, fetch from API
+            const stationsByLine = {
+                'NE': [ // Northeast Corridor Line
+                    { code: 'TR', name: 'Trenton' },
+                    { code: 'HL', name: 'Hamilton' },
+                    { code: 'PJ', name: 'Princeton Junction' },
+                    { code: 'PR', name: 'Princeton' },
+                    { code: 'NB', name: 'New Brunswick' },
+                    { code: 'ED', name: 'Edison' },
+                    { code: 'MU', name: 'Metuchen' },
+                    { code: 'MP', name: 'Metropark' },
+                    { code: 'RH', name: 'Rahway' },
+                    { code: 'LI', name: 'Linden' },
+                    { code: 'EZ', name: 'Elizabeth' },
+                    { code: 'NP', name: 'Newark Penn Station' },
+                    { code: 'NA', name: 'Newark Airport' },
+                    { code: 'SE', name: 'Secaucus Junction' },
+                    { code: 'NY', name: 'New York Penn Station' }
+                ],
+                'NC': [ // North Jersey Coast Line
+                    { code: 'BH', name: 'Bay Head' },
+                    { code: 'PP', name: 'Point Pleasant Beach' },
+                    { code: 'SQ', name: 'Manasquan' },
+                    { code: 'BS', name: 'Belmar' },
+                    { code: 'LA', name: 'Spring Lake' },
+                    { code: 'BB', name: 'Bradley Beach' },
+                    { code: 'AP', name: 'Asbury Park' },
+                    { code: 'AH', name: 'Allenhurst' },
+                    { code: 'EL', name: 'Elberon' },
+                    { code: 'LB', name: 'Long Branch' },
+                    { code: 'LS', name: 'Little Silver' },
+                    { code: 'RB', name: 'Red Bank' },
+                    { code: 'MK', name: 'Monmouth Park' },
+                    { code: 'MI', name: 'Middletown' },
+                    { code: 'HZ', name: 'Hazlet' },
+                    { code: 'AM', name: 'Aberdeen-Matawan' },
+                    { code: 'CH', name: 'South Amboy' },
+                    { code: 'PE', name: 'Perth Amboy' },
+                    { code: 'WB', name: 'Woodbridge' },
+                    { code: 'RH', name: 'Rahway' },
+                    { code: 'NP', name: 'Newark Penn Station' },
+                    { code: 'SE', name: 'Secaucus Junction' },
+                    { code: 'NY', name: 'New York Penn Station' }
+                ],
+                'RV': [ // Raritan Valley Line
+                    { code: 'RA', name: 'Raritan' },
+                    { code: 'SM', name: 'Somerville' },
+                    { code: 'BW', name: 'Bridgewater' },
+                    { code: 'BK', name: 'Bound Brook' },
+                    { code: 'DN', name: 'Dunellen' },
+                    { code: 'PF', name: 'Plainfield' },
+                    { code: 'NE', name: 'Netherwood' },
+                    { code: 'FW', name: 'Fanwood' },
+                    { code: 'WF', name: 'Westfield' },
+                    { code: 'GW', name: 'Garwood' },
+                    { code: 'XC', name: 'Cranford' },
+                    { code: 'RL', name: 'Roselle Park' },
+                    { code: 'US', name: 'Union' },
+                    { code: 'NP', name: 'Newark Penn Station' }
+                ],
+                'AC': [ // Atlantic City Line
+                    { code: 'AC', name: 'Atlantic City' },
+                    { code: 'AB', name: 'Absecon' },
+                    { code: 'EH', name: 'Egg Harbor City' },
+                    { code: 'HN', name: 'Hammonton' },
+                    { code: 'AO', name: 'Atco' },
+                    { code: 'CY', name: 'Cherry Hill' },
+                    { code: 'LW', name: 'Lindenwold' },
+                    { code: 'PN', name: 'Pennsauken' },
+                    { code: 'PH', name: 'Philadelphia' }
+                ],
+                'BC': [ // Bergen County Line
+                    { code: 'SF', name: 'Suffern' },
+                    { code: 'RM', name: 'Ramsey' },
+                    { code: 'MZ', name: 'Mahwah' },
+                    { code: 'WK', name: 'Waldwick' },
+                    { code: 'HD', name: 'Hillsdale' },
+                    { code: 'WW', name: 'Westwood' },
+                    { code: 'OD', name: 'Oradell' },
+                    { code: 'EN', name: 'Emerson' },
+                    { code: 'AZ', name: 'Allendale' },
+                    { code: 'RW', name: 'Ridgewood' },
+                    { code: 'GK', name: 'Glen Rock' },
+                    { code: 'HB', name: 'Hoboken' },
+                    { code: 'SE', name: 'Secaucus Junction' }
+                ],
+                'ML': [ // Main Line
+                    { code: 'SF', name: 'Suffern' },
+                    { code: 'RY', name: 'Ramsey' },
+                    { code: 'MZ', name: 'Mahwah' },
+                    { code: 'WK', name: 'Waldwick' },
+                    { code: 'HD', name: 'Hillsdale' },
+                    { code: 'WW', name: 'Westwood' },
+                    { code: 'OD', name: 'Oradell' },
+                    { code: 'RG', name: 'River Edge' },
+                    { code: 'NH', name: 'New Bridge Landing' },
+                    { code: 'TE', name: 'Teterboro' },
+                    { code: 'HB', name: 'Hoboken' },
+                    { code: 'SE', name: 'Secaucus Junction' }
+                ],
+                'MC': [ // Montclair-Boonton Line
+                    { code: 'HQ', name: 'Hackettstown' },
+                    { code: 'NT', name: 'Netcong' },
+                    { code: 'HP', name: 'Lake Hopatcong' },
+                    { code: 'HV', name: 'Mount Arlington' },
+                    { code: 'DO', name: 'Dover' },
+                    { code: 'DV', name: 'Denville' },
+                    { code: 'ML', name: 'Mountain Lakes' },
+                    { code: 'BN', name: 'Boonton' },
+                    { code: 'UV', name: 'Montclair State University' },
+                    { code: 'HS', name: 'Montclair Heights' },
+                    { code: 'UM', name: 'Upper Montclair' },
+                    { code: 'MW', name: 'Maplewood' },
+                    { code: 'SO', name: 'South Orange' },
+                    { code: 'HB', name: 'Hoboken' },
+                    { code: 'NY', name: 'New York Penn Station' }
+                ],
+                'ME': [ // Morris & Essex Line
+                    { code: 'GL', name: 'Gladstone' },
+                    { code: 'PC', name: 'Peapack' },
+                    { code: 'FH', name: 'Far Hills' },
+                    { code: 'BI', name: 'Basking Ridge' },
+                    { code: 'LY', name: 'Lyons' },
+                    { code: 'GO', name: 'Millington' },
+                    { code: 'SG', name: 'Stirling' },
+                    { code: 'GI', name: 'Gillette' },
+                    { code: 'BY', name: 'Berkeley Heights' },
+                    { code: 'MH', name: 'Murray Hill' },
+                    { code: 'NV', name: 'New Providence' },
+                    { code: 'ST', name: 'Summit' },
+                    { code: 'RT', name: 'Short Hills' },
+                    { code: 'MB', name: 'Millburn' },
+                    { code: 'MW', name: 'Maplewood' },
+                    { code: 'SO', name: 'South Orange' },
+                    { code: 'OG', name: 'Orange' },
+                    { code: 'EO', name: 'East Orange' },
+                    { code: 'ND', name: 'Newark Broad Street' },
+                    { code: 'HB', name: 'Hoboken' },
+                    { code: 'NY', name: 'New York Penn Station' }
+                ],
+                'PV': [ // Pascack Valley Line
+                    { code: 'SV', name: 'Spring Valley' },
+                    { code: 'NN', name: 'Nanuet' },
+                    { code: 'PQ', name: 'Pearl River' },
+                    { code: 'ZM', name: 'Montvale' },
+                    { code: 'PV', name: 'Park Ridge' },
+                    { code: 'WL', name: 'Woodcliff Lake' },
+                    { code: 'HD', name: 'Hillsdale' },
+                    { code: 'WW', name: 'Westwood' },
+                    { code: 'OD', name: 'Oradell' },
+                    { code: 'EN', name: 'Emerson' },
+                    { code: 'HB', name: 'Hoboken' },
+                    { code: 'SE', name: 'Secaucus Junction' }
+                ],
+                'GS': [ // Gladstone Branch (part of Morris & Essex)
+                    { code: 'GL', name: 'Gladstone' },
+                    { code: 'PC', name: 'Peapack' },
+                    { code: 'FH', name: 'Far Hills' },
+                    { code: 'BI', name: 'Basking Ridge' },
+                    { code: 'LY', name: 'Lyons' },
+                    { code: 'ST', name: 'Summit' },
+                    { code: 'HB', name: 'Hoboken' },
+                    { code: 'NY', name: 'New York Penn Station' }
+                ]
+            };
+            
+            return stationsByLine[lineCode] || [];
+        }
+
+        function getMockStations() {
+            // Legacy function - not used anymore
+            return [];
+        }
+
+        function getMockTrains(stationCode, lineCode) {
+            // Return mock train data - in production, fetch from API based on station and line
+            return {
+                outbound: [
+                    { id: '3817', time: '06:45 AM', destination: 'New York Penn' },
+                    { id: '3221', time: '07:15 AM', destination: 'New York Penn' },
+                    { id: '3225', time: '07:45 AM', destination: 'New York Penn' },
+                    { id: '3918', time: '08:15 AM', destination: 'New York Penn' }
+                ],
+                inbound: [
+                    { id: '3826', time: '05:15 PM', destination: stationCode === 'LB' ? 'Long Branch' : 'Trenton' },
+                    { id: '3830', time: '05:45 PM', destination: stationCode === 'LB' ? 'Long Branch' : 'Trenton' },
+                    { id: '5711', time: '06:15 PM', destination: stationCode === 'LB' ? 'Long Branch' : 'Trenton' },
+                    { id: '3708', time: '06:45 PM', destination: stationCode === 'LB' ? 'Long Branch' : 'Trenton' }
+                ]
+            };
+        }
+    </script>
+</body>
+</html>
