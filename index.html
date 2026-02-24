@@ -569,22 +569,10 @@
                 
                 const trains = await response.json();
                 
-                // Get line name for filtering
-                const selectedLine = document.getElementById('train-line').selectedOptions[0].textContent;
-                
-                // Filter trains by selected line
-                const filterByLine = (trainList) => {
-                    return trainList.filter(train => {
-                        // Match if train's line contains the selected line name
-                        // or if it's a common line (NEC, NJCL, etc.)
-                        const trainLine = train.line || '';
-                        return trainLine.includes(selectedLine) || 
-                               trainLine.includes(getLineAbbreviation(lineCode));
-                    });
-                };
-                
-                const filteredOutbound = filterByLine(trains.outbound || []);
-                const filteredInbound = filterByLine(trains.inbound || []);
+                // Show all trains for this station - no line filtering needed
+                // Station already belongs to the selected line
+                const filteredOutbound = trains.outbound || [];
+                const filteredInbound = trains.inbound || [];
                 
                 morningSelect.innerHTML = '<option value="">Select train to NYC...</option>';
                 eveningSelect.innerHTML = '<option value="">Select train from NYC...</option>';
