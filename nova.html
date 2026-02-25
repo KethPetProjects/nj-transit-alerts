@@ -685,12 +685,22 @@ async function callNova(userMessage){
         messages: history
       })
     });
-    if(!res.ok) throw new Error('API error');
     const data = await res.json();
-    const text = data.content?.[0]?.text || "Sorry, I had a brain glitch! Try again?";
+    console.log('Nova response:', JSON.stringify(data).slice(0,200));
+    // Handle both direct Anthropic response and wrapped response
+    let text = null;
+    if(data.content && data.content[0] && data.content[0].text){
+      text = data.content[0].text;
+    } else if(data.detail){
+      text = "Service error: " + data.detail;
+    } else {
+      console.error('Unexpected response format:', data);
+      text = "I got confused there! Try again?";
+    }
     history.push({role:'assistant', content: text});
     return text;
   } catch(e){
+    console.error('callNova error:', e);
     return "Network hiccup! Try again? 🔄";
   }
 }
