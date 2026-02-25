@@ -331,6 +331,13 @@
         <p>Never miss your train • Get real-time delay notifications</p>
     </div>
 
+    <!-- Nova AI Banner -->
+    <div style="background:linear-gradient(135deg,#0A0A0F,#1A1A26);border-bottom:1px solid #2A2A3E;padding:0.75rem 2rem;display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;">
+      <span style="color:#6B6B8A;font-size:0.85rem;font-family:monospace;">✦ NEW</span>
+      <span style="color:#E8E8F0;font-size:0.9rem;font-weight:500;">Try <strong style="color:#E63946;">Nova</strong> — our AI-powered setup assistant</span>
+      <a href="nova.html" style="padding:0.4rem 1.25rem;background:#E63946;color:white;border-radius:6px;font-size:0.85rem;font-weight:600;text-decoration:none;letter-spacing:0.03em;transition:all 0.2s;" onmouseover="this.style.background='#FF4757'" onmouseout="this.style.background='#E63946'">Launch Nova →</a>
+    </div>
+
     <div class="container">
         <div class="card">
             <div class="tabs">
@@ -650,225 +657,91 @@
             document.getElementById(tabName + '-tab').classList.add('active');
         }
 
-        // Helper: format phone to E.164 for API (+1XXXXXXXXXX)
-        function toE164(phone) {
-            const digits = phone.replace(/\D/g, '');
-            return '+1' + digits;
-        }
-
-        // Helper: show error message
-        function showError(elementId, message) {
-            let errorDiv = document.getElementById(elementId);
-            if (!errorDiv) {
-                errorDiv = document.createElement('div');
-                errorDiv.id = elementId;
-                errorDiv.style.cssText = 'background:#FFEBEE;border-left:4px solid #E53935;padding:1rem;border-radius:8px;margin-top:1rem;color:#C62828;font-weight:600;';
-            }
-            errorDiv.textContent = message;
-            return errorDiv;
-        }
-
-        // Helper: reset subscribe form to fresh state
-        function resetSubscribeForm() {
-            document.getElementById('subscribe-form').style.display = 'block';
-            document.getElementById('subscribe-form').reset();
-            document.getElementById('verification-box').classList.remove('show');
-            document.getElementById('success-message').classList.remove('show');
-            document.getElementById('home-station').disabled = true;
-            document.getElementById('home-station').innerHTML = '<option value="">Select your line first...</option>';
-            document.getElementById('morning-train').disabled = true;
-            document.getElementById('morning-train').innerHTML = '<option value="">Select station first...</option>';
-            document.getElementById('evening-train').disabled = true;
-            document.getElementById('evening-train').innerHTML = '<option value="">Select station first...</option>';
-            const err = document.getElementById('subscribe-error');
-            if (err) err.remove();
-        }
-
-        // Helper: reset unsubscribe form to fresh state
-        function resetUnsubscribeForm() {
-            document.getElementById('unsubscribe-form').style.display = 'block';
-            document.getElementById('unsubscribe-form').reset();
-            document.getElementById('unsubscribe-verification-box').classList.remove('show');
-            document.getElementById('unsubscribe-success').classList.remove('show');
-            const err = document.getElementById('unsubscribe-error');
-            if (err) err.remove();
-        }
-
-        // Store phone for verification step
-        let subscribePhone = '';
-        let unsubscribePhone = '';
-
         // Subscribe form submission
         document.getElementById('subscribe-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-
+            
             const stationCode = document.getElementById('home-station').value;
-            const stationName = document.getElementById('home-station').selectedOptions[0]?.dataset.name || stationCode;
+            const stationName = document.getElementById('home-station').selectedOptions[0].dataset.name;
             const lineCode = document.getElementById('train-line').value;
-            const lineName = document.getElementById('train-line').selectedOptions[0]?.textContent || '';
+            const lineName = document.getElementById('train-line').selectedOptions[0].textContent;
             const morningTrain = document.getElementById('morning-train').value;
             const eveningTrain = document.getElementById('evening-train').value;
             const phone = document.getElementById('phone').value;
             const delayAlerts = document.getElementById('delay-alerts').checked;
             const ontimeAlerts = document.getElementById('ontime-alerts').checked;
-
+            
             if (!stationCode || !lineCode || !morningTrain || !eveningTrain || !phone) {
                 alert('Please fill in all required fields!');
                 return;
             }
-
-            const submitBtn = this.querySelector('button[type="submit"]');
-            submitBtn.textContent = 'Sending...';
-            submitBtn.disabled = true;
-
-            try {
-                const response = await fetch(`${API_BASE}/subscribe`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        phone: toE164(phone),
-                        morning_train: morningTrain,
-                        evening_train: eveningTrain,
-                        delay_alerts: delayAlerts,
-                        ontime_alerts: ontimeAlerts
-                    })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.detail || 'Subscription failed');
-                }
-
-                // Store for verification
-                subscribePhone = toE164(phone);
-                sessionStorage.setItem('subscription', JSON.stringify({
-                    station: stationName,
-                    line: lineName,
-                    morning: document.getElementById('morning-train').selectedOptions[0]?.textContent || morningTrain,
-                    evening: document.getElementById('evening-train').selectedOptions[0]?.textContent || eveningTrain,
-                    phone: phone
-                }));
-
-                // Show verification box
-                document.getElementById('subscribe-form').style.display = 'none';
-                document.getElementById('verification-box').classList.add('show');
-
-            } catch (error) {
-                const err = showError('subscribe-error', '❌ ' + error.message);
-                this.appendChild(err);
-            } finally {
-                submitBtn.textContent = 'Subscribe to Alerts';
-                submitBtn.disabled = false;
-            }
+            
+            // Hide form, show verification
+            document.getElementById('subscribe-form').style.display = 'none';
+            document.getElementById('verification-box').classList.add('show');
+            
+            // In real app: Send API request to backend
+            console.log('Subscribe request:', { stationCode, lineCode, morningTrain, eveningTrain, phone, delayAlerts, ontimeAlerts });
+            
+            // Store for success message
+            sessionStorage.setItem('subscription', JSON.stringify({
+                station: stationName,
+                line: lineName,
+                morning: document.getElementById('morning-train').selectedOptions[0].textContent,
+                evening: document.getElementById('evening-train').selectedOptions[0].textContent,
+                phone: phone
+            }));
         });
 
         // Verification
-        async function verifyCode() {
+        function verifyCode() {
             const code = document.getElementById('verification-code').value;
-
+            
             if (code.length !== 6) {
                 alert('Please enter a 6-digit code');
                 return;
             }
-
-            const btn = document.querySelector('#verification-box button');
-            btn.textContent = 'Verifying...';
-            btn.disabled = true;
-
-            try {
-                const response = await fetch(`${API_BASE}/verify`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: subscribePhone, code: code })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.detail || 'Invalid verification code');
-                }
-
-                // Show success then reset after 4 seconds
-                document.getElementById('verification-box').classList.remove('show');
-                document.getElementById('success-message').classList.add('show');
-
-                const sub = JSON.parse(sessionStorage.getItem('subscription'));
-                document.getElementById('success-station').textContent = sub.station;
-                document.getElementById('success-line').textContent = sub.line;
-                document.getElementById('success-morning').textContent = sub.morning;
-                document.getElementById('success-evening').textContent = sub.evening;
-                document.getElementById('success-phone').textContent = sub.phone;
-
-                setTimeout(() => resetSubscribeForm(), 5000);
-
-            } catch (error) {
-                alert('❌ ' + error.message);
-                btn.textContent = 'Verify & Activate';
-                btn.disabled = false;
-            }
+            
+            // Hide verification, show success
+            document.getElementById('verification-box').classList.remove('show');
+            document.getElementById('success-message').classList.add('show');
+            
+            // Display subscription details
+            const sub = JSON.parse(sessionStorage.getItem('subscription'));
+            document.getElementById('success-station').textContent = sub.station;
+            document.getElementById('success-line').textContent = sub.line;
+            document.getElementById('success-morning').textContent = sub.morning;
+            document.getElementById('success-evening').textContent = sub.evening;
+            document.getElementById('success-phone').textContent = sub.phone;
         }
 
         // Unsubscribe form
-        document.getElementById('unsubscribe-form').addEventListener('submit', async function(e) {
+        document.getElementById('unsubscribe-form').addEventListener('submit', function(e) {
             e.preventDefault();
-
+            
             const phone = document.getElementById('unsubscribe-phone').value;
-
+            
             if (!phone) {
                 alert('Please enter your phone number');
                 return;
             }
-
-            const submitBtn = this.querySelector('button[type="submit"]');
-            submitBtn.textContent = 'Checking...';
-            submitBtn.disabled = true;
-
-            try {
-                // Check if subscription exists first
-                const checkResponse = await fetch(`${API_BASE}/subscription/${toE164(phone)}`);
-
-                if (checkResponse.status === 404) {
-                    throw new Error('No subscription found for this phone number.');
-                }
-
-                if (!checkResponse.ok) {
-                    throw new Error('Something went wrong. Please try again.');
-                }
-
-                // Subscription exists - proceed with unsubscribe
-                const response = await fetch(`${API_BASE}/unsubscribe`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: toE164(phone) })
-                });
-
-                const data = await response.json();
-
-                if (!response.ok) {
-                    throw new Error(data.detail || 'Unsubscribe failed');
-                }
-
-                // Store phone for confirmation step
-                unsubscribePhone = toE164(phone);
-
-                // Show success then reset after 4 seconds
-                document.getElementById('unsubscribe-form').style.display = 'none';
-                document.getElementById('unsubscribe-success').classList.add('show');
-
-                setTimeout(() => resetUnsubscribeForm(), 5000);
-
-            } catch (error) {
-                const err = showError('unsubscribe-error', '❌ ' + error.message);
-                this.appendChild(err);
-            } finally {
-                submitBtn.textContent = 'Request Unsubscribe';
-                submitBtn.disabled = false;
-            }
+            
+            document.getElementById('unsubscribe-form').style.display = 'none';
+            document.getElementById('unsubscribe-verification-box').classList.add('show');
+            
+            console.log('Unsubscribe request:', { phone });
         });
 
         function confirmUnsubscribe() {
-            // Legacy function - kept for compatibility
+            const code = document.getElementById('unsubscribe-code').value;
+            
+            if (code.length !== 6) {
+                alert('Please enter a 6-digit code');
+                return;
+            }
+            
+            document.getElementById('unsubscribe-verification-box').classList.remove('show');
+            document.getElementById('unsubscribe-success').classList.add('show');
         }
 
         // Phone formatting - improved to allow backspace

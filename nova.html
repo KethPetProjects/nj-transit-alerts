@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Nova — NJ Transit AI</title>
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #0A0A0F;
+  --surface: #12121A;
+  --surface2: #1A1A26;
+  --border: #2A2A3E;
+  --accent: #E63946;
+  --accent2: #4CC9F0;
+  --gold: #F4A261;
+  --text: #E8E8F0;
+  --text-dim: #6B6B8A;
+  --nova-bubble: #1A1A26;
+  --user-bubble: #E63946;
+  --success: #06D6A0;
+}
+
+* { margin:0; padding:0; box-sizing:border-box; }
+
+body {
+  font-family: 'JetBrains Mono', monospace;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+/* Animated background grid */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(230,57,70,0.03) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(230,57,70,0.03) 1px, transparent 1px);
+  background-size: 40px 40px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+/* Header */
+.header {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  background: rgba(10,10,15,0.95);
+  backdrop-filter: blur(20px);
+  border-bottom: 1px solid var(--border);
+  padding: 0.875rem 1.5rem;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.nova-logo {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+}
+
+.nova-icon {
+  width: 38px;
+  height: 38px;
+  background: linear-gradient(135deg, var(--accent), #FF6B6B);
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.1rem;
+  box-shadow: 0 0 20px rgba(230,57,70,0.4);
+}
+
+.nova-name {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.2rem;
+  letter-spacing: -0.02em;
+  color: white;
+}
+
+.nova-sub {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  font-weight: 300;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.header-right {
+  margin-left: auto;
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+}
+
+.status-pill {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.3rem 0.75rem;
+  background: rgba(6,214,160,0.1);
+  border: 1px solid rgba(6,214,160,0.2);
+  border-radius: 50px;
+  font-size: 0.7rem;
+  color: var(--success);
+  letter-spacing: 0.05em;
+}
+
+.status-dot {
+  width: 6px;
+  height: 6px;
+  background: var(--success);
+  border-radius: 50%;
+  animation: pulse 2s infinite;
+  box-shadow: 0 0 6px var(--success);
+}
+
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:0.3} }
+
+.weather-badge {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  display: flex;
+  align-items: center;
+  gap: 0.3rem;
+}
+
+/* Chat */
+.chat-container {
+  flex: 1;
+  overflow-y: auto;
+  padding: 1.5rem 1rem 1rem;
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+  max-width: 760px;
+  width: 100%;
+  margin: 0 auto;
+  position: relative;
+  z-index: 1;
+}
+
+.chat-container::-webkit-scrollbar { width: 4px; }
+.chat-container::-webkit-scrollbar-track { background: transparent; }
+.chat-container::-webkit-scrollbar-thumb { background: var(--border); border-radius: 4px; }
+
+/* Messages */
+.message {
+  display: flex;
+  gap: 0.75rem;
+  animation: msgIn 0.3s cubic-bezier(0.34,1.56,0.64,1);
+}
+
+@keyframes msgIn {
+  from { opacity:0; transform:translateY(16px) scale(0.96); }
+  to { opacity:1; transform:translateY(0) scale(1); }
+}
+
+.message.user { flex-direction: row-reverse; }
+
+.avatar {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.avatar.nova {
+  background: linear-gradient(135deg, var(--accent), #FF6B6B);
+  box-shadow: 0 0 12px rgba(230,57,70,0.3);
+}
+
+.avatar.user {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text-dim);
+}
+
+.bubble {
+  max-width: 78%;
+  padding: 0.875rem 1.125rem;
+  border-radius: 16px;
+  font-size: 0.875rem;
+  line-height: 1.7;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.message.nova .bubble {
+  background: var(--nova-bubble);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-bottom-left-radius: 4px;
+}
+
+.message.user .bubble {
+  background: var(--user-bubble);
+  color: white;
+  border-bottom-right-radius: 4px;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+/* Chips */
+.chips-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+  margin-left: 2.75rem;
+  animation: msgIn 0.3s ease;
+}
+
+.chip {
+  padding: 0.45rem 0.875rem;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--surface);
+  color: var(--text-dim);
+  font-size: 0.78rem;
+  font-family: 'JetBrains Mono', monospace;
+  cursor: pointer;
+  transition: all 0.2s;
+  letter-spacing: 0.02em;
+}
+
+.chip:hover {
+  border-color: var(--accent);
+  color: var(--accent);
+  background: rgba(230,57,70,0.08);
+  transform: translateY(-1px);
+}
+
+/* Typing */
+.typing-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  animation: msgIn 0.3s ease;
+}
+
+.typing-dots {
+  display: flex;
+  gap: 5px;
+  padding: 0.875rem 1.125rem;
+  background: var(--nova-bubble);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  border-bottom-left-radius: 4px;
+}
+
+.typing-dots span {
+  width: 6px;
+  height: 6px;
+  background: var(--accent);
+  border-radius: 50%;
+  animation: typingBounce 1.2s infinite;
+  opacity: 0.6;
+}
+
+.typing-dots span:nth-child(2) { animation-delay: 0.2s; }
+.typing-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes typingBounce {
+  0%,60%,100% { transform:translateY(0); opacity:0.6; }
+  30% { transform:translateY(-6px); opacity:1; }
+}
+
+/* Train cards */
+.train-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.4rem;
+  margin-left: 2.75rem;
+}
+
+.train-card {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+.train-card:hover {
+  border-color: var(--accent2);
+  background: rgba(76,201,240,0.05);
+  transform: translateX(4px);
+}
+
+.train-card.selected {
+  border-color: var(--accent);
+  background: rgba(230,57,70,0.08);
+}
+
+.train-card.disabled { pointer-events:none; opacity:0.4; }
+
+.train-num {
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  color: var(--accent2);
+  font-size: 0.9rem;
+  min-width: 70px;
+}
+
+.train-time {
+  font-size: 0.85rem;
+  color: var(--text);
+  font-weight: 500;
+}
+
+.train-dest {
+  font-size: 0.75rem;
+  color: var(--text-dim);
+  margin-left: auto;
+}
+
+/* Summary */
+.summary-card {
+  margin-top: 0.5rem;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.summary-header {
+  padding: 0.75rem 1rem;
+  background: rgba(230,57,70,0.1);
+  border-bottom: 1px solid var(--border);
+  font-family: 'Syne', sans-serif;
+  font-weight: 700;
+  font-size: 0.85rem;
+  color: var(--accent);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.summary-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.6rem 1rem;
+  border-bottom: 1px solid rgba(42,42,62,0.5);
+  font-size: 0.8rem;
+}
+
+.summary-row:last-child { border-bottom: none; }
+.summary-label { color: var(--text-dim); }
+.summary-value { color: var(--text); font-weight: 500; }
+
+/* Stats card */
+.stats-card {
+  margin-top: 0.5rem;
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 0.5rem;
+}
+
+.stat-box {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  padding: 0.875rem;
+  text-align: center;
+}
+
+.stat-num {
+  font-family: 'Syne', sans-serif;
+  font-weight: 800;
+  font-size: 1.5rem;
+  color: var(--accent2);
+}
+
+.stat-label {
+  font-size: 0.7rem;
+  color: var(--text-dim);
+  margin-top: 0.25rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+/* Input */
+.input-area {
+  position: sticky;
+  bottom: 0;
+  z-index: 100;
+  background: rgba(10,10,15,0.95);
+  backdrop-filter: blur(20px);
+  border-top: 1px solid var(--border);
+  padding: 1rem;
+}
+
+.input-inner {
+  max-width: 760px;
+  margin: 0 auto;
+  display: flex;
+  gap: 0.75rem;
+  align-items: center;
+}
+
+.input-inner input {
+  flex: 1;
+  padding: 0.875rem 1.25rem;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  font-size: 0.875rem;
+  font-family: 'JetBrains Mono', monospace;
+  outline: none;
+  transition: all 0.2s;
+}
+
+.input-inner input:focus {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 3px rgba(230,57,70,0.1);
+}
+
+.input-inner input::placeholder { color: var(--text-dim); }
+
+.send-btn {
+  width: 44px;
+  height: 44px;
+  background: var(--accent);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 1rem;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  flex-shrink: 0;
+  box-shadow: 0 0 16px rgba(230,57,70,0.3);
+}
+
+.send-btn:hover { background: #FF4757; transform: scale(1.05); }
+.send-btn:disabled { background: var(--border); box-shadow: none; cursor: not-allowed; transform: none; }
+
+/* Mode badge */
+.mode-badge {
+  font-size: 0.65rem;
+  padding: 0.2rem 0.5rem;
+  border-radius: 4px;
+  background: rgba(244,162,97,0.15);
+  border: 1px solid rgba(244,162,97,0.3);
+  color: var(--gold);
+  letter-spacing: 0.05em;
+}
+
+/* Test mode banner */
+.test-banner {
+  background: rgba(244,162,97,0.08);
+  border-bottom: 1px solid rgba(244,162,97,0.2);
+  padding: 0.4rem 1.5rem;
+  font-size: 0.7rem;
+  color: var(--gold);
+  text-align: center;
+  letter-spacing: 0.05em;
+  font-family: 'JetBrains Mono', monospace;
+}
+
+a { color: var(--accent2); text-decoration: none; }
+a:hover { text-decoration: underline; }
+</style>
+</head>
+<body>
+
+<div class="test-banner">⚡ TEST MODE — Use code 000000 to verify any subscription</div>
+
+<div class="header">
+  <div class="nova-logo">
+    <div class="nova-icon">✦</div>
+    <div>
+      <div class="nova-name">NOVA</div>
+      <div class="nova-sub">NJ Transit AI Assistant</div>
+    </div>
+  </div>
+  <div class="header-right">
+    <div class="weather-badge" id="weatherBadge">📍 Loading...</div>
+    <div class="status-pill">
+      <div class="status-dot"></div>
+      ONLINE
+    </div>
+    <div class="mode-badge">AI</div>
+  </div>
+</div>
+
+<div class="chat-container" id="chat"></div>
+
+<div class="input-area">
+  <div class="input-inner">
+    <input type="text" id="userInput" placeholder="Ask Nova anything..." onkeydown="if(event.key==='Enter')sendMessage()">
+    <button class="send-btn" onclick="sendMessage()" id="sendBtn">➤</button>
+  </div>
+</div>
+
+<script>
+const API_BASE = 'https://train-alerts-api.livelyhill-7b9b1325.westus2.azurecontainerapps.io';
+
+const LINES = [
+  {code:'NE',name:'Northeast Corridor'},{code:'NC',name:'North Jersey Coast'},
+  {code:'RV',name:'Raritan Valley'},{code:'ME',name:'Morris & Essex'},
+  {code:'MC',name:'Montclair-Boonton'},{code:'ML',name:'Main Line'},
+  {code:'BC',name:'Bergen County'},{code:'PV',name:'Pascack Valley'},
+  {code:'AC',name:'Atlantic City'},{code:'GS',name:'Gladstone Branch'}
+];
+
+const STATIONS = {
+  NE:[{code:'TR',name:'Trenton'},{code:'HL',name:'Hamilton'},{code:'PJ',name:'Princeton Junction'},{code:'NB',name:'New Brunswick'},{code:'ED',name:'Edison'},{code:'MU',name:'Metuchen'},{code:'MP',name:'Metropark'},{code:'RH',name:'Rahway'},{code:'LI',name:'Linden'},{code:'EZ',name:'Elizabeth'},{code:'NP',name:'Newark Penn'}],
+  NC:[{code:'BH',name:'Bay Head'},{code:'PP',name:'Point Pleasant Beach'},{code:'LB',name:'Long Branch'},{code:'RB',name:'Red Bank'},{code:'AM',name:'Aberdeen-Matawan'},{code:'RH',name:'Rahway'},{code:'NP',name:'Newark Penn'}],
+  RV:[{code:'RA',name:'Raritan'},{code:'SM',name:'Somerville'},{code:'BW',name:'Bridgewater'},{code:'PF',name:'Plainfield'},{code:'WF',name:'Westfield'},{code:'XC',name:'Cranford'},{code:'NP',name:'Newark Penn'}],
+  ME:[{code:'GL',name:'Gladstone'},{code:'ST',name:'Summit'},{code:'MB',name:'Millburn'},{code:'MW',name:'Maplewood'},{code:'SO',name:'South Orange'},{code:'ND',name:'Newark Broad St'}],
+  MC:[{code:'HQ',name:'Hackettstown'},{code:'DO',name:'Dover'},{code:'BN',name:'Boonton'},{code:'UV',name:'Montclair State Univ'},{code:'UM',name:'Upper Montclair'}],
+  ML:[{code:'SF',name:'Suffern'},{code:'RM',name:'Ramsey'},{code:'WK',name:'Waldwick'},{code:'HD',name:'Hillsdale'},{code:'WW',name:'Westwood'}],
+  BC:[{code:'SF',name:'Suffern'},{code:'RW',name:'Ridgewood'},{code:'GK',name:'Glen Rock'},{code:'HB',name:'Hoboken'}],
+  PV:[{code:'SV',name:'Spring Valley'},{code:'NN',name:'Nanuet'},{code:'PQ',name:'Pearl River'},{code:'HD',name:'Hillsdale'},{code:'WW',name:'Westwood'}],
+  AC:[{code:'AC',name:'Atlantic City'},{code:'HN',name:'Hammonton'},{code:'LW',name:'Lindenwold'},{code:'PH',name:'Philadelphia'}],
+  GS:[{code:'GL',name:'Gladstone'},{code:'FH',name:'Far Hills'},{code:'ST',name:'Summit'}]
+};
+
+// State
+let state = {
+  step: 'welcome',
+  line: null, lineName: null,
+  station: null, stationName: null,
+  morningTrain: null, eveningTrain: null,
+  phone: null, allInbound: [],
+  unsubPhone: null,
+  weather: null,
+  timeOfDay: null
+};
+
+// Conversation history for Claude Haiku
+let history = [];
+
+const chat = document.getElementById('chat');
+
+// ── Helpers ──────────────────────────────────────────────
+function delay(ms){ return new Promise(r=>setTimeout(r,ms)); }
+
+function getTimeOfDay(){
+  const h = new Date().getHours();
+  if(h>=5&&h<12) return 'morning';
+  if(h>=12&&h<17) return 'afternoon';
+  if(h>=17&&h<21) return 'evening';
+  return 'night';
+}
+
+function addMessage(role, html, extra=null){
+  const div = document.createElement('div');
+  div.className = `message ${role}`;
+  const av = document.createElement('div');
+  av.className = `avatar ${role}`;
+  av.textContent = role==='nova' ? '✦' : '→';
+  const bub = document.createElement('div');
+  bub.className = 'bubble';
+  bub.innerHTML = html.replace(/\n/g,'<br>');
+  if(extra) bub.appendChild(extra);
+  div.appendChild(av); div.appendChild(bub);
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+function showTyping(){
+  const div = document.createElement('div');
+  div.className = 'typing-indicator'; div.id = 'typing';
+  div.innerHTML = `<div class="avatar nova">✦</div><div class="typing-dots"><span></span><span></span><span></span></div>`;
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+function removeTyping(){ document.getElementById('typing')?.remove(); }
+
+function showChips(options, onSelect){
+  document.getElementById('chips-row')?.remove();
+  const div = document.createElement('div');
+  div.className = 'chips-row'; div.id = 'chips-row';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = opt.name || opt.label;
+    btn.onclick = () => { document.getElementById('chips-row')?.remove(); onSelect(opt); };
+    div.appendChild(btn);
+  });
+  chat.appendChild(div);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function novaSay(msg, extra=null){
+  showTyping();
+  await delay(600 + Math.random()*400);
+  removeTyping();
+  addMessage('nova', msg, extra);
+}
+
+// ── Weather ───────────────────────────────────────────────
+async function fetchWeather(){
+  try {
+    const res = await fetch('https://api.open-meteo.com/v1/forecast?latitude=40.7589&longitude=-74.0033&current=temperature_2m,weather_code,wind_speed_10m&temperature_unit=fahrenheit&wind_speed_unit=mph');
+    const data = await res.json();
+    const temp = Math.round(data.current.temperature_2m);
+    const code = data.current.weather_code;
+    let icon = '☀️', desc = 'Clear';
+    if(code>=51&&code<=67){icon='🌧️';desc='Rainy';}
+    else if(code>=71&&code<=77){icon='❄️';desc='Snowy';}
+    else if(code>=80&&code<=82){icon='🌦️';desc='Showers';}
+    else if(code>=2&&code<=3){icon='☁️';desc='Cloudy';}
+    else if(code===1){icon='🌤️';desc='Mostly Clear';}
+    state.weather = {temp, icon, desc, code};
+    document.getElementById('weatherBadge').textContent = `${icon} ${temp}°F · ${desc}`;
+    return state.weather;
+  } catch(e) {
+    document.getElementById('weatherBadge').textContent = '📍 Newark, NJ';
+    return null;
+  }
+}
+
+function getWeatherContext(){
+  if(!state.weather) return '';
+  const {desc, code} = state.weather;
+  if(code>=71&&code<=77) return " It's snowing outside ❄️ — NJ Transit delays are likely today, so I'll keep a close eye on your trains.";
+  if(code>=51&&code<=67) return " It's rainy out 🌧️ — wet weather can slow things down a bit.";
+  if(code>=2&&code<=3) return " Cloudy day today.";
+  return " Looks like decent weather today! ☀️";
+}
+
+// ── Claude Haiku AI ────────────────────────────────────────
+const SYSTEM_PROMPT = `You are Nova, a witty and helpful NJ Transit AI assistant. You help commuters subscribe to train delay alerts via SMS.
+
+Your personality:
+- Friendly, slightly sarcastic about NJ Transit delays (they're legendary)
+- Keep responses SHORT — 1-3 sentences max
+- Use occasional train/commute humor
+- When trains are delayed, be empathetic but add light humor: "Classic NJ Transit 🚂💨"
+- Reference weather when relevant
+
+You guide users through these steps IN ORDER:
+1. Welcome + ask what they want (subscribe, unsubscribe, check subscription)
+2. If subscribing: ask LINE → STATION → MORNING TIME → [show trains] → EVENING TIME → [show trains] → PHONE → SUMMARY → CONFIRM
+3. If unsubscribing: ask PHONE → verify subscription exists → send code → confirm
+
+IMPORTANT RULES:
+- Keep responses to 1-3 sentences
+- When you need to show train selection UI, end your message with [SHOW_MORNING_TRAINS] or [SHOW_EVENING_TRAINS]
+- When you have identified the line, include [LINE:CODE] (e.g. [LINE:NE])
+- When you have identified the station, include [STATION:CODE] (e.g. [STATION:PJ])
+- When you need morning time, include [NEED_MORNING_TIME]
+- When you need evening time, include [NEED_EVENING_TIME]  
+- When ready for phone number, include [NEED_PHONE]
+- When ready to show summary and confirm, include [SHOW_SUMMARY]
+- When user wants to unsubscribe, include [START_UNSUB]
+- When user wants to check subscription, include [CHECK_SUB]
+- Never make up train numbers — the UI handles train selection
+- If user goes off-topic, gently redirect with humor: "I love a good tangent, but let's get your train alerts sorted first! 🚂"
+
+Line codes: NE=Northeast Corridor, NC=North Jersey Coast, RV=Raritan Valley, ME=Morris & Essex, MC=Montclair-Boonton, ML=Main Line, BC=Bergen County, PV=Pascack Valley, AC=Atlantic City, GS=Gladstone Branch
+
+Station codes for NE: TR=Trenton, HL=Hamilton, PJ=Princeton Junction, NB=New Brunswick, ED=Edison, MU=Metuchen, MP=Metropark, RH=Rahway, LI=Linden, EZ=Elizabeth, NP=Newark Penn`;
+
+async function callNova(userMessage){
+  history.push({role:'user', content: userMessage});
+  try {
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: {'Content-Type':'application/json'},
+      body: JSON.stringify({
+        model: 'claude-haiku-4-5-20251001',
+        max_tokens: 1000,
+        system: SYSTEM_PROMPT,
+        messages: history
+      })
+    });
+    const data = await res.json();
+    const text = data.content?.[0]?.text || "Sorry, I had a brain glitch! Try again?";
+    history.push({role:'assistant', content: text});
+    return text;
+  } catch(e){
+    return "Network hiccup! Try again? 🔄";
+  }
+}
+
+function parseNovaResponse(text){
+  let clean = text;
+  const tags = {
+    line: text.match(/\[LINE:([A-Z]{2})\]/),
+    station: text.match(/\[STATION:([A-Z]{2,3})\]/),
+    showMorning: text.includes('[SHOW_MORNING_TRAINS]'),
+    showEvening: text.includes('[SHOW_EVENING_TRAINS]'),
+    needMorningTime: text.includes('[NEED_MORNING_TIME]'),
+    needEveningTime: text.includes('[NEED_EVENING_TIME]'),
+    needPhone: text.includes('[NEED_PHONE]'),
+    showSummary: text.includes('[SHOW_SUMMARY]'),
+    startUnsub: text.includes('[START_UNSUB]'),
+    checkSub: text.includes('[CHECK_SUB]'),
+  };
+  if(tags.line) state.line = tags.line[1], state.lineName = LINES.find(l=>l.code===tags.line[1])?.name;
+  if(tags.station) state.station = tags.station[1], state.stationName = STATIONS[state.line]?.find(s=>s.code===tags.station[1])?.name;
+  clean = clean.replace(/\[LINE:[A-Z]{2}\]|\[STATION:[A-Z]{2,3}\]|\[SHOW_MORNING_TRAINS\]|\[SHOW_EVENING_TRAINS\]|\[NEED_MORNING_TIME\]|\[NEED_EVENING_TIME\]|\[NEED_PHONE\]|\[SHOW_SUMMARY\]|\[START_UNSUB\]|\[CHECK_SUB\]/g,'').trim();
+  return {clean, ...tags};
+}
+
+// ── Train helpers ──────────────────────────────────────────
+function parseTrainMinutes(t){
+  const m=t.match(/(\d+):(\d+)\s*(AM|PM)/i);
+  if(!m)return 0;
+  let h=parseInt(m[1]),min=parseInt(m[2]);
+  if(m[3].toUpperCase()==='PM'&&h!==12)h+=12;
+  if(m[3].toUpperCase()==='AM'&&h===12)h=0;
+  return h*60+min;
+}
+
+async function loadAllTrains(){
+  if(state.allTrainsData) return state.allTrainsData;
+  const res = await fetch(`${API_BASE}/trains/${state.station}`);
+  const data = await res.json();
+  state.allTrainsData = data;
+  state.allInbound = data.inbound||[];
+  return data;
+}
+
+function showTrainCards(trains, type){
+  const wrapper = document.createElement('div');
+  wrapper.className = 'train-cards';
+  trains.forEach(train => {
+    const card = document.createElement('div');
+    card.className = 'train-card';
+    card.innerHTML = `<span class="train-num">→ ${train.id}</span><span class="train-time">${train.time}</span><span class="train-dest">${train.destination}</span>`;
+    card.onclick = async () => {
+      wrapper.querySelectorAll('.train-card').forEach(c=>{c.classList.add('disabled');c.classList.remove('selected')});
+      card.classList.add('selected'); card.classList.remove('disabled');
+      addMessage('user', `Train ${train.id} at ${train.time}`);
+      if(type==='morning'){
+        state.morningTrain = train;
+        history.push({role:'user', content:`I selected Train ${train.id} at ${train.time} as my morning train.`});
+        const resp = await callNova(`I selected Train ${train.id} at ${train.time} as my morning train. Now ask me what time I leave work in the evening.`);
+        const parsed = parseNovaResponse(resp);
+        await novaSay(parsed.clean);
+        state.step = 'evening_time';
+        document.getElementById('userInput').placeholder = 'e.g. 5:30 PM or 6 PM';
+      } else {
+        state.eveningTrain = train;
+        history.push({role:'user', content:`I selected Train ${train.id} at ${train.time} as my evening train.`});
+        const resp = await callNova(`I selected Train ${train.id} at ${train.time} as my evening train. Now ask for my phone number.`);
+        const parsed = parseNovaResponse(resp);
+        await novaSay(parsed.clean);
+        state.step = 'phone';
+        document.getElementById('userInput').placeholder = 'Your 10-digit phone number';
+      }
+    };
+    wrapper.appendChild(card);
+  });
+  chat.appendChild(wrapper);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+// ── Step handlers ──────────────────────────────────────────
+async function handleMorningTime(text){
+  const m=text.match(/(\d+)/);
+  const hour=m?parseInt(m[1]):7;
+  const isPM=text.toLowerCase().includes('pm');
+  const hour24=isPM&&hour!==12?hour+12:hour;
+  showTyping();
+  try{
+    const data = await loadAllTrains();
+    removeTyping();
+    const targetMins=hour24*60;
+    const filtered=(data.outbound||[]).filter(t=>{
+      const mins=parseTrainMinutes(t.time);
+      return mins>=(targetMins-30)&&mins<=(targetMins+90);
+    }).slice(0,6);
+    const toShow=filtered.length>0?filtered:(data.outbound||[]).slice(0,6);
+    const resp = await callNova(`Great, user wants trains around ${text} from ${state.stationName}. Show them the morning train options.`);
+    const parsed = parseNovaResponse(resp);
+    await novaSay(parsed.clean);
+    showTrainCards(toShow,'morning');
+    state.step='morning_train';
+  }catch(e){
+    removeTyping();
+    await novaSay("Couldn't load trains right now. The NJ Transit API is probably taking a nap 😴 Try again?");
+    state.step='morning_time';
+  }
+}
+
+async function handleEveningTime(text){
+  const m=text.match(/(\d+)/);
+  const hour=m?parseInt(m[1]):17;
+  const hasAM=text.toLowerCase().includes('am');
+  const hasPM=text.toLowerCase().includes('pm');
+  const isPM=hasPM||((!hasAM)&&hour>=1&&hour<=9);
+  const hour24=isPM&&hour!==12?hour+12:hour;
+  const targetMins=hour24*60;
+  const filtered=state.allInbound.filter(t=>{
+    const mins=parseTrainMinutes(t.time);
+    return mins>=(targetMins-30)&&mins<=(targetMins+150);
+  }).slice(0,6);
+  const toShow=filtered.length>0?filtered:state.allInbound.filter(t=>parseTrainMinutes(t.time)>=targetMins).slice(0,6);
+  const resp = await callNova(`User wants evening trains around ${text}. Show them options.`);
+  const parsed = parseNovaResponse(resp);
+  await novaSay(parsed.clean);
+  showTrainCards(toShow,'evening');
+  state.step='evening_train';
+}
+
+async function handlePhone(text){
+  const digits=text.replace(/\D/g,'');
+  if(digits.length!==10){
+    await novaSay("That doesn't look like a valid 10-digit number. Try again? (e.g. 973-555-1234)");
+    return;
+  }
+  state.phone=text;
+  // Show summary
+  const summary=document.createElement('div');
+  summary.className='summary-card';
+  summary.innerHTML=`
+    <div class="summary-header">✦ YOUR ALERT SETUP</div>
+    <div class="summary-row"><span class="summary-label">LINE</span><span class="summary-value">${state.lineName}</span></div>
+    <div class="summary-row"><span class="summary-label">STATION</span><span class="summary-value">${state.stationName}</span></div>
+    <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value">Train ${state.morningTrain?.id} · ${state.morningTrain?.time}</span></div>
+    <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value">Train ${state.eveningTrain?.id} · ${state.eveningTrain?.time}</span></div>
+    <div class="summary-row"><span class="summary-label">PHONE</span><span class="summary-value">${state.phone}</span></div>`;
+  const resp = await callNova("Show the user a summary and ask them to confirm their subscription.");
+  const parsed = parseNovaResponse(resp);
+  await novaSay(parsed.clean, summary);
+  state.step='confirm';
+  await delay(300);
+  showChips([
+    {name:'✓ Confirm & Subscribe', code:'yes'},
+    {name:'✕ Start Over', code:'no'}
+  ], async opt => {
+    addMessage('user', opt.name);
+    if(opt.code==='yes') await doSubscribe();
+    else {
+      resetState();
+      const resp = await callNova("User wants to start over. Welcome them back and ask what they want to do.");
+      await novaSay(parseNovaResponse(resp).clean);
+      showChips([
+        {name:'Subscribe to alerts', code:'sub'},
+        {name:'Unsubscribe', code:'unsub'},
+        {name:'Check my subscription', code:'check'}
+      ], handleMainMenu);
+    }
+  });
+}
+
+async function doSubscribe(){
+  showTyping();
+  try{
+    const e164='+1'+state.phone.replace(/\D/g,'');
+    const res=await fetch(`${API_BASE}/subscribe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:e164,morning_train:state.morningTrain.id,evening_train:state.eveningTrain.id,delay_alerts:true,ontime_alerts:true})});
+    removeTyping();
+    if(res.ok){
+      const resp = await callNova("Subscription request sent! Tell user to check their phone for a 6-digit verification code. Be enthusiastic but brief.");
+      await novaSay(parseNovaResponse(resp).clean);
+      state.step='verify';
+      document.getElementById('userInput').placeholder='Enter 6-digit code (or 000000 to test)';
+    } else {
+      const d=await res.json();
+      await novaSay(`Hmm, something went sideways: ${d.detail}. Want to try again?`);
+    }
+  }catch(e){ removeTyping(); await novaSay("Network trouble! Try again in a sec 🔄"); }
+}
+
+async function handleVerify(text){
+  const code=text.replace(/\D/g,'');
+  if(code.length!==6){ await novaSay("Need exactly 6 digits! (Hint: 000000 works in test mode 😉)"); return; }
+  showTyping();
+  try{
+    const e164='+1'+state.phone.replace(/\D/g,'');
+    const res=await fetch(`${API_BASE}/verify`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:e164,code})});
+    removeTyping();
+    if(res.ok){
+      state.step='post';
+      // Show commute stats (mock data for now, fun!)
+      const statsEl = document.createElement('div');
+      statsEl.className = 'stats-card';
+      statsEl.innerHTML = `
+        <div class="stat-box"><div class="stat-num">98%</div><div class="stat-label">NEC On-Time Rate*</div></div>
+        <div class="stat-box"><div class="stat-num">5min</div><div class="stat-label">Check Interval</div></div>
+        <div class="stat-box"><div class="stat-num">24/7</div><div class="stat-label">Monitoring</div></div>
+        <div class="stat-box"><div class="stat-num">∞</div><div class="stat-label">Patience Needed</div></div>`;
+      const resp = await callNova("User is now successfully subscribed! Give a fun congratulations message. Keep it short and witty. Maybe joke about NJ Transit delays.");
+      await novaSay(parseNovaResponse(resp).clean, statsEl);
+      await delay(400);
+      showChips([
+        {name:'📋 View my subscription', code:'status'},
+        {name:'🔄 Set up another', code:'restart'},
+        {name:'🌐 Open main app', code:'mainapp'},
+        {name:'❓ How do alerts work?', code:'howto'}
+      ], handlePostChip);
+      document.getElementById('userInput').placeholder='Ask Nova anything...';
+    } else {
+      await novaSay("That code didn't match. Double-check or use 000000 in test mode!");
+    }
+  }catch(e){ removeTyping(); await novaSay("Verification hiccup! Try again?"); }
+}
+
+// Unsubscribe flow
+async function handleUnsubPhone(text){
+  const digits=text.replace(/\D/g,'');
+  if(digits.length!==10){ await novaSay("Need a valid 10-digit number!"); return; }
+  const e164='+1'+digits;
+  showTyping();
+  try{
+    const res=await fetch(`${API_BASE}/subscription/${encodeURIComponent(e164)}`);
+    removeTyping();
+    if(res.ok){
+      const sub=await res.json();
+      state.unsubPhone=e164;
+      const resp = await callNova(`Found subscription: Morning Train ${sub.morning_train}, Evening Train ${sub.evening_train}. Show this and ask if they really want to unsubscribe. Be a little sad about it 😢`);
+      await novaSay(parseNovaResponse(resp).clean);
+      state.step='unsub_confirm';
+      showChips([
+        {name:'Yes, send me a code', code:'yes'},
+        {name:'No, keep my alerts', code:'no'}
+      ], async opt => {
+        addMessage('user', opt.name);
+        if(opt.code==='yes') await requestUnsubCode(e164);
+        else {
+          await novaSay("Phew! Smart choice. Your alerts are safe 🚂");
+          state.step='post';
+          showChips([{name:'📋 View subscription',code:'status'},{name:'🌐 Open main app',code:'mainapp'}], handlePostChip);
+        }
+      });
+    } else {
+      await novaSay("No subscription found for that number. Sure you used the right one? 🤔");
+      state.step='unsub_phone';
+    }
+  }catch(e){ removeTyping(); await novaSay("Trouble connecting. Try again!"); }
+}
+
+async function requestUnsubCode(e164){
+  showTyping();
+  try{
+    const res=await fetch(`${API_BASE}/unsubscribe/request`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:e164})});
+    removeTyping();
+    if(res.ok){
+      await novaSay("📲 Sent a 6-digit code to your phone. Enter it to confirm — this protects you from accidental unsubscribes!");
+      state.step='unsub_verify';
+      document.getElementById('userInput').placeholder='Enter 6-digit code (or 000000 to test)';
+    } else {
+      await novaSay("Couldn't send the code. Try again?");
+    }
+  }catch(e){ removeTyping(); await novaSay("Network trouble!"); }
+}
+
+async function handleUnsubVerify(text){
+  const code=text.replace(/\D/g,'');
+  if(code.length!==6){ await novaSay("6 digits please!"); return; }
+  showTyping();
+  try{
+    const res=await fetch(`${API_BASE}/unsubscribe/confirm`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:state.unsubPhone,code})});
+    removeTyping();
+    if(res.ok){
+      state.step='post';
+      const resp = await callNova("User successfully unsubscribed. Say goodbye warmly, let them know they can come back anytime. Keep it short.");
+      await novaSay(parseNovaResponse(resp).clean);
+      showChips([{name:'🔔 Subscribe again',code:'sub'},{name:'🌐 Open main app',code:'mainapp'}], handleMainMenu);
+    } else {
+      await novaSay("Code didn't match. Try again or use 000000 in test mode!");
+    }
+  }catch(e){ removeTyping(); await novaSay("Network trouble!"); }
+}
+
+async function handleCheckSub(text){
+  const digits=text.replace(/\D/g,'');
+  if(digits.length!==10){ await novaSay("Need a valid 10-digit number!"); return; }
+  const e164='+1'+digits;
+  showTyping();
+  try{
+    const res=await fetch(`${API_BASE}/subscription/${encodeURIComponent(e164)}`);
+    removeTyping();
+    if(res.ok){
+      const sub=await res.json();
+      const card=document.createElement('div');
+      card.className='summary-card';
+      card.innerHTML=`
+        <div class="summary-header">✦ ACTIVE SUBSCRIPTION</div>
+        <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value">Train ${sub.morning_train}</span></div>
+        <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value">Train ${sub.evening_train}</span></div>
+        <div class="summary-row"><span class="summary-label">STATUS</span><span class="summary-value" style="color:var(--success)">● ${sub.status?.toUpperCase()}</span></div>`;
+      const resp = await callNova("Found the subscription. Confirm it's active and ask if they need anything else.");
+      await novaSay(parseNovaResponse(resp).clean, card);
+      state.step='post';
+      showChips([
+        {name:'🔕 Unsubscribe',code:'unsub'},
+        {name:'🔄 Update trains',code:'sub'},
+        {name:'🌐 Open main app',code:'mainapp'}
+      ], handleMainMenu);
+    } else {
+      await novaSay("No subscription found for that number. Want to create one?");
+      showChips([{name:'Subscribe now',code:'sub'}], handleMainMenu);
+      state.step='post';
+    }
+  }catch(e){ removeTyping(); await novaSay("Trouble connecting!"); }
+}
+
+// Post-signup chips
+async function handlePostChip(opt){
+  addMessage('user', opt.name);
+  switch(opt.code){
+    case 'status':
+      const card=document.createElement('div');
+      card.className='summary-card';
+      card.innerHTML=`
+        <div class="summary-header">✦ YOUR SUBSCRIPTION</div>
+        <div class="summary-row"><span class="summary-label">LINE</span><span class="summary-value">${state.lineName||'—'}</span></div>
+        <div class="summary-row"><span class="summary-label">STATION</span><span class="summary-value">${state.stationName||'—'}</span></div>
+        <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value">Train ${state.morningTrain?.id||'—'} · ${state.morningTrain?.time||''}</span></div>
+        <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value">Train ${state.eveningTrain?.id||'—'} · ${state.eveningTrain?.time||''}</span></div>
+        <div class="summary-row"><span class="summary-label">PHONE</span><span class="summary-value">${state.phone||'—'}</span></div>`;
+      addMessage('nova','',card);
+      break;
+    case 'restart':
+      resetState();
+      await novaSay("Let's do it! Which line this time?");
+      state.step='line';
+      showChips(LINES, selectLine);
+      return;
+    case 'mainapp':
+      await novaSay(`The main app is at: <a href="https://black-plant-0162ad510.4.azurestaticapps.net" target="_blank">NJ Transit Alerts ↗</a>`);
+      break;
+    case 'howto':
+      await novaSay("Nova checks your trains every 5 minutes. If there's a delay over 5 minutes or a cancellation, you get an SMS instantly. On-time? You get a heads-up 30 minutes before departure. ⏱️");
+      break;
+  }
+  await delay(300);
+  showChips([
+    {name:'📋 View my subscription',code:'status'},
+    {name:'🔄 Set up another',code:'restart'},
+    {name:'🌐 Open main app',code:'mainapp'},
+    {name:'❓ How do alerts work?',code:'howto'}
+  ], handlePostChip);
+}
+
+// Main menu chip handler
+async function handleMainMenu(opt){
+  addMessage('user', opt.name||opt.label);
+  if(opt.code==='sub'){
+    resetState();
+    const resp = await callNova("User wants to subscribe. Ask which line they commute on.");
+    await novaSay(parseNovaResponse(resp).clean);
+    state.step='line';
+    showChips(LINES, selectLine);
+  } else if(opt.code==='unsub'){
+    const resp = await callNova("User wants to unsubscribe. Ask for their phone number.");
+    await novaSay(parseNovaResponse(resp).clean);
+    state.step='unsub_phone';
+    document.getElementById('userInput').placeholder='Your 10-digit phone number';
+  } else if(opt.code==='check'){
+    const resp = await callNova("User wants to check their subscription. Ask for their phone number.");
+    await novaSay(parseNovaResponse(resp).clean);
+    state.step='check_phone';
+    document.getElementById('userInput').placeholder='Your 10-digit phone number';
+  }
+}
+
+async function selectLine(opt){
+  state.line=opt.code; state.lineName=opt.name;
+  addMessage('user', opt.name);
+  history.push({role:'user', content:`I commute on the ${opt.name} [LINE:${opt.code}]`});
+  const resp = await callNova(`User commutes on ${opt.name}. Now ask which station they board from.`);
+  const parsed = parseNovaResponse(resp);
+  await novaSay(parsed.clean);
+  state.step='station';
+  showChips(STATIONS[opt.code]||[], selectStation);
+}
+
+async function selectStation(opt){
+  state.station=opt.code; state.stationName=opt.name;
+  addMessage('user', opt.name);
+  history.push({role:'user', content:`I board from ${opt.name} [STATION:${opt.code}]`});
+  const resp = await callNova(`User boards from ${opt.name}. Ask what time they usually leave for NYC in the morning.`);
+  const parsed = parseNovaResponse(resp);
+  await novaSay(parsed.clean);
+  state.step='morning_time';
+  document.getElementById('userInput').placeholder='e.g. 7:30 AM or 8 AM';
+}
+
+function resetState(){
+  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, phone:null, allInbound:[], allTrainsData:null, unsubPhone:null};
+  history = [];
+}
+
+// ── Send message ───────────────────────────────────────────
+async function sendMessage(){
+  const input = document.getElementById('userInput');
+  const text = input.value.trim();
+  if(!text || state.step==='loading') return;
+  input.value = '';
+  addMessage('user', text);
+
+  // Steps that need card taps
+  if(state.step==='morning_train'){
+    await novaSay("Tap one of the train cards above to pick your morning train! 👆");
+    return;
+  }
+  if(state.step==='evening_train'){
+    // Maybe they're specifying a time — re-filter
+    if(/\d/.test(text)){ await handleEveningTime(text); return; }
+    await novaSay("Tap one of the train cards above to pick your evening train! 👆");
+    return;
+  }
+  if(state.step==='confirm' || state.step==='unsub_confirm'){
+    await novaSay("Tap one of the buttons above to confirm! 👆");
+    return;
+  }
+
+  switch(state.step){
+    case 'welcome':
+    case 'post': {
+      showTyping();
+      const resp = await callNova(text);
+      removeTyping();
+      const parsed = parseNovaResponse(resp);
+      await delay(100);
+      addMessage('nova', parsed.clean);
+      if(parsed.startUnsub){ state.step='unsub_phone'; document.getElementById('userInput').placeholder='Your phone number'; }
+      else if(parsed.checkSub){ state.step='check_phone'; document.getElementById('userInput').placeholder='Your phone number'; }
+      else if(state.step==='welcome'){
+        await delay(300);
+        showChips([{name:'Subscribe to alerts',code:'sub'},{name:'Unsubscribe',code:'unsub'},{name:'Check my subscription',code:'check'}], handleMainMenu);
+      }
+      break;
+    }
+    case 'line': {
+      const match = LINES.find(l=>text.toLowerCase().includes(l.name.toLowerCase().split(' ')[0]));
+      if(match) await selectLine(match);
+      else { showTyping(); const r=await callNova(text); removeTyping(); addMessage('nova',parseNovaResponse(r).clean); showChips(LINES,selectLine); }
+      break;
+    }
+    case 'station': {
+      const stations=STATIONS[state.line]||[];
+      const match=stations.find(s=>text.toLowerCase().includes(s.name.toLowerCase().split(' ')[0]));
+      if(match) await selectStation(match);
+      else { showTyping(); const r=await callNova(text); removeTyping(); addMessage('nova',parseNovaResponse(r).clean); showChips(stations,selectStation); }
+      break;
+    }
+    case 'morning_time': await handleMorningTime(text); break;
+    case 'evening_time': await handleEveningTime(text); break;
+    case 'phone': await handlePhone(text); break;
+    case 'verify': await handleVerify(text); break;
+    case 'unsub_phone': await handleUnsubPhone(text); break;
+    case 'unsub_verify': await handleUnsubVerify(text); break;
+    case 'check_phone': await handleCheckSub(text); break;
+    default: {
+      showTyping();
+      const resp = await callNova(text);
+      removeTyping();
+      addMessage('nova', parseNovaResponse(resp).clean);
+    }
+  }
+}
+
+// ── Init ───────────────────────────────────────────────────
+(async()=>{
+  const weather = await fetchWeather();
+  state.timeOfDay = getTimeOfDay();
+  const greetings = {morning:'Good morning', afternoon:'Good afternoon', evening:'Good evening', night:'Hey night owl'};
+  const greeting = greetings[state.timeOfDay];
+  const weatherLine = weather ? getWeatherContext() : '';
+  
+  const initMsg = `${greeting}! I'm Nova, your NJ Transit AI assistant.${weatherLine}\n\nI can help you set up delay alerts, manage your subscription, or answer commute questions. What do you need?`;
+  
+  // Add to history so Nova remembers the greeting
+  history.push({role:'assistant', content:initMsg});
+  
+  await delay(400);
+  addMessage('nova', initMsg);
+  state.step = 'welcome';
+  await delay(300);
+  showChips([
+    {name:'🔔 Subscribe to alerts', code:'sub'},
+    {name:'🔕 Unsubscribe', code:'unsub'},
+    {name:'📋 Check my subscription', code:'check'}
+  ], handleMainMenu);
+})();
+</script>
+</body>
+</html>
