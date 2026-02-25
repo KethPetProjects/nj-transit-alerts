@@ -677,16 +677,15 @@ Station codes for NE: TR=Trenton, HL=Hamilton, PJ=Princeton Junction, NB=New Bru
 async function callNova(userMessage){
   history.push({role:'user', content: userMessage});
   try {
-    const res = await fetch('https://api.anthropic.com/v1/messages', {
+    const res = await fetch(`${API_BASE}/nova/chat`, {
       method: 'POST',
       headers: {'Content-Type':'application/json'},
       body: JSON.stringify({
-        model: 'claude-haiku-4-5-20251001',
-        max_tokens: 1000,
         system: SYSTEM_PROMPT,
         messages: history
       })
     });
+    if(!res.ok) throw new Error('API error');
     const data = await res.json();
     const text = data.content?.[0]?.text || "Sorry, I had a brain glitch! Try again?";
     history.push({role:'assistant', content: text});
