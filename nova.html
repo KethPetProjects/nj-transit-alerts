@@ -857,11 +857,25 @@ async function handleMorningTime(text){
       const mins=parseTrainMinutes(t.time);
       return mins>=(targetMins-30)&&mins<=(targetMins+90);
     }).slice(0,6);
-    const toShow=filtered.length>0?filtered:(data.outbound||[]).slice(0,6);
-    const resp = await callNova(`Great, user wants trains around ${text} from ${state.stationName}. Show them the morning train options.`);
-    const parsed = parseNovaResponse(resp);
-    await novaSay(parsed.clean);
-    showTrainCards(toShow,'morning');
+
+    if(filtered.length>0){
+      const resp = await callNova(`User wants morning trains around ${text} from ${state.stationName}. Found options. Show them.`);
+      await novaSay(parseNovaResponse(resp).clean);
+      showTrainCards(filtered,'morning');
+    } else {
+      const allSorted=[...(data.outbound||[])].sort((a,b)=>parseTrainMinutes(a.time)-parseTrainMinutes(b.time));
+      const afterTime=allSorted.filter(t=>parseTrainMinutes(t.time)>=targetMins).slice(0,3);
+      const beforeTime=allSorted.filter(t=>parseTrainMinutes(t.time)<targetMins).slice(-2);
+      const nearest=[...beforeTime,...afterTime].slice(0,6);
+      const earliestAfter=afterTime[0];
+      const latestBefore=beforeTime[beforeTime.length-1];
+      let msg='';
+      if(earliestAfter&&latestBefore) msg=`No trains found around ${text}. Nearest options are ${latestBefore.time} and ${earliestAfter.time}:`;
+      else if(earliestAfter) msg=`No trains around ${text} — next available is ${earliestAfter.time}:`;
+      else msg=`No trains found around ${text}. Here are the available options:`;
+      await novaSay(msg);
+      showTrainCards(nearest.length>0?nearest:allSorted.slice(0,6),'morning');
+    }
     state.step='morning_train';
   }catch(e){
     removeTyping();
@@ -878,15 +892,46 @@ async function handleEveningTime(text){
   const isPM=hasPM||((!hasAM)&&hour>=1&&hour<=9);
   const hour24=isPM&&hour!==12?hour+12:hour;
   const targetMins=hour24*60;
+
+  // Try tight window first (±30min to +2.5hr)
   const filtered=state.allInbound.filter(t=>{
     const mins=parseTrainMinutes(t.time);
     return mins>=(targetMins-30)&&mins<=(targetMins+150);
   }).slice(0,6);
-  const toShow=filtered.length>0?filtered:state.allInbound.filter(t=>parseTrainMinutes(t.time)>=targetMins).slice(0,6);
-  const resp = await callNova(`User wants evening trains around ${text}. Show them options.`);
-  const parsed = parseNovaResponse(resp);
-  await novaSay(parsed.clean);
-  showTrainCards(toShow,'evening');
+
+  if(filtered.length>0){
+    // Found trains near requested time
+    const resp = await callNova(`User wants evening trains around ${text}. Found some options near that time. Show them.`);
+    await novaSay(parseNovaResponse(resp).clean);
+    showTrainCards(filtered,'evening');
+  } else {
+    // No trains near that time — find nearest available trains and explain
+    const allSorted = [...state.allInbound].sort((a,b)=>parseTrainMinutes(a.time)-parseTrainMinutes(b.time));
+    const afterTime = allSorted.filter(t=>parseTrainMinutes(t.time)>=targetMins).slice(0,3);
+    const beforeTime = allSorted.filter(t=>parseTrainMinutes(t.time)<targetMins).slice(-2);
+    const nearest = [...beforeTime, ...afterTime].slice(0,6);
+
+    if(nearest.length>0){
+      const earliestAfter = afterTime[0];
+      const latestBefore = beforeTime[beforeTime.length-1];
+      let noTrainMsg = '';
+      if(earliestAfter && latestBefore){
+        noTrainMsg = `No trains found around ${text}. The nearest options are around ${latestBefore.time} (before) and ${earliestAfter.time} (after). Here's what's available:`;
+      } else if(earliestAfter){
+        noTrainMsg = `No trains around ${text} — the next available train is at ${earliestAfter.time}. Here are your options:`;
+      } else if(latestBefore){
+        noTrainMsg = `No trains after ${text} — the last available train was at ${latestBefore.time}. Here are the latest options:`;
+      } else {
+        noTrainMsg = `Couldn't find trains around ${text}. Here are all available options:`;
+      }
+      await novaSay(noTrainMsg);
+      showTrainCards(nearest,'evening');
+    } else {
+      // No inbound trains at all — fall back to all
+      await novaSay(`No trains found around ${text}. Showing all available options from ${state.stationName}:`);
+      showTrainCards(allSorted.slice(0,6),'evening');
+    }
+  }
   state.step='evening_train';
 }
 
@@ -1210,12 +1255,93 @@ function resetState(){
 }
 
 // ── Send message ───────────────────────────────────────────
+// Detect back/restart intent
+function isGoingBack(text){
+  const t = text.toLowerCase();
+  return t.match(/\b(back|previous|go back|undo|change|wrong|mistake|start over|restart|reset|cancel|different|change my mind)\b/);
+}
+
+function getStepBack(step){
+  const backMap = {
+    'station': 'line',
+    'morning_time': 'station',
+    'morning_train': 'morning_time',
+    'evening_time': 'morning_train',
+    'evening_train': 'evening_time',
+    'phone': 'evening_train',
+    'consent': 'phone',
+    'confirm': 'phone',
+    'verify': 'phone',
+  };
+  return backMap[step] || 'welcome';
+}
+
+async function goBack(){
+  const prevStep = getStepBack(state.step);
+  document.getElementById('chips-row')?.remove();
+  
+  switch(prevStep){
+    case 'line':
+      state.line=null; state.lineName=null; state.station=null; state.stationName=null;
+      state.morningTrain=null; state.eveningTrain=null; state.allTrainsData=null;
+      state.step='line';
+      await novaSay("No problem! Which line do you commute on?");
+      showChips(LINES, selectLine);
+      document.getElementById('userInput').placeholder='Or type your line name...';
+      break;
+    case 'station':
+      state.station=null; state.stationName=null;
+      state.morningTrain=null; state.eveningTrain=null; state.allTrainsData=null;
+      state.step='station';
+      await novaSay(`Got it! Which station on the ${state.lineName}?`);
+      showChips(STATIONS[state.line]||[], selectStation);
+      break;
+    case 'morning_time':
+      state.morningTrain=null; state.eveningTrain=null; state.allTrainsData=null;
+      state.step='morning_time';
+      await novaSay(`Sure! What time do you usually leave ${state.stationName} in the morning?`);
+      document.getElementById('userInput').placeholder='e.g. 7:30 AM or 8 AM';
+      break;
+    case 'morning_train':
+      state.morningTrain=null;
+      state.step='morning_time';
+      await novaSay("No worries! What time do you usually head to NYC in the morning?");
+      document.getElementById('userInput').placeholder='e.g. 7:30 AM or 8 AM';
+      break;
+    case 'evening_time':
+      state.eveningTrain=null;
+      state.step='evening_time';
+      await novaSay(`Got it! What time do you usually leave work in the evening?`);
+      document.getElementById('userInput').placeholder='e.g. 5:30 PM or 6 PM';
+      break;
+    case 'phone':
+      state.phone=null;
+      state.step='phone';
+      await novaSay("Sure! What's your phone number?");
+      document.getElementById('userInput').placeholder='Your 10-digit phone number';
+      break;
+    case 'welcome':
+    default:
+      resetState();
+      await novaSay("No problem, let's start fresh! What would you like to do?");
+      state.step='welcome';
+      showChips([{name:'Subscribe to alerts',code:'sub'},{name:'Unsubscribe',code:'unsub'},{name:'Check my subscription',code:'check'}], handleMainMenu);
+  }
+}
+
 async function sendMessage(){
   const input = document.getElementById('userInput');
   const text = input.value.trim();
   if(!text || state.step==='loading') return;
   input.value = '';
   addMessage('user', text);
+
+  // Check for back/restart intent first — works from any step
+  const backSteps = ['line','station','morning_time','morning_train','evening_time','evening_train','phone','consent','confirm','verify'];
+  if(isGoingBack(text) && backSteps.includes(state.step)){
+    await goBack();
+    return;
+  }
 
   // Steps that need card taps
   if(state.step==='morning_train'){
