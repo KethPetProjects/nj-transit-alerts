@@ -482,6 +482,66 @@ body::before {
 
 a { color: var(--accent2); text-decoration: none; }
 a:hover { text-decoration: underline; }
+
+/* Consent card */
+.consent-card {
+  background: #0F1A0F;
+  border: 1px solid #1A3A1A;
+  border-radius: 12px;
+  padding: 1rem 1.25rem;
+  margin-left: 2.75rem;
+  font-size: 0.78rem;
+  line-height: 1.6;
+  color: #9090A8;
+  animation: msgIn 0.3s ease;
+}
+
+.consent-card strong { color: #06D6A0; }
+
+.consent-checkbox-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-top: 0.75rem;
+  padding-top: 0.75rem;
+  border-top: 1px solid #1A3A1A;
+}
+
+.consent-checkbox-row input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  margin-top: 2px;
+  accent-color: var(--accent);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.consent-checkbox-row label {
+  color: #C8C8DC;
+  font-size: 0.8rem;
+  cursor: pointer;
+  line-height: 1.5;
+}
+
+.consent-submit-btn {
+  margin-top: 0.75rem;
+  padding: 0.5rem 1.25rem;
+  background: var(--accent);
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-family: 'JetBrains Mono', monospace;
+  font-size: 0.8rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s;
+  display: block;
+  width: 100%;
+}
+
+.consent-submit-btn:hover { background: #FF4757; }
+.consent-submit-btn:disabled { background: var(--border); cursor: not-allowed; }
+a:hover { text-decoration: underline; }
 </style>
 </head>
 <body>
@@ -837,15 +897,37 @@ async function handlePhone(text){
     return;
   }
   state.phone=text;
-  // Show consent before summary
-  await novaSay("Almost there! One quick thing — by subscribing you agree to receive SMS train delay alerts from NJ Transit Delay Alerts. Message frequency varies. Msg & data rates may apply. Reply STOP anytime to unsubscribe. Good?");
+  // Show proper consent card UI
+  await novaSay("Almost there! Just need your consent before we activate alerts:");
+  showConsentCard();
   state.step='consent';
-  showChips([{name:'✓ I agree, continue', code:'agree'},{name:'✕ Cancel', code:'cancel'}], async opt => {
-    addMessage('user', opt.name);
-    if(opt.code==='cancel'){ await novaSay("No problem! Come back anytime. 🚂"); return; }
-    state.step='phone_confirmed';
-    await continueAfterConsent();
-  });
+}
+
+function showConsentCard(){
+  document.getElementById('chips-row')?.remove();
+  const card = document.createElement('div');
+  card.className = 'consent-card';
+  card.id = 'consent-card';
+  card.innerHTML = `
+    <div>By subscribing, <strong>NJ Transit Delay Alerts</strong> will send you recurring automated SMS alerts for your selected trains. Message frequency varies. <strong>Msg & data rates may apply.</strong> Reply <strong>STOP</strong> to unsubscribe anytime. Reply <strong>HELP</strong> for help.</div>
+    <div style="margin-top:0.5rem;font-size:0.75rem;">
+      <a href="privacy.html" target="_blank" style="color:var(--accent2)">Privacy Policy</a> · 
+      <a href="terms.html" target="_blank" style="color:var(--accent2)">Terms & Conditions</a>
+    </div>
+    <div class="consent-checkbox-row">
+      <input type="checkbox" id="nova-consent-check" onchange="document.getElementById('nova-consent-btn').disabled=!this.checked">
+      <label for="nova-consent-check">I agree to receive SMS train delay alerts from NJ Transit Delay Alerts. I understand message & data rates may apply and I can reply STOP at any time to unsubscribe.</label>
+    </div>
+    <button class="consent-submit-btn" id="nova-consent-btn" disabled onclick="handleConsentAgree()">✓ I Agree — Activate Alerts</button>
+  `;
+  chat.appendChild(card);
+  chat.scrollTop = chat.scrollHeight;
+}
+
+async function handleConsentAgree(){
+  document.getElementById('consent-card')?.remove();
+  addMessage('user', '✓ I agree to receive SMS alerts');
+  await continueAfterConsent();
 }
 
 async function continueAfterConsent(){
