@@ -7,6 +7,8 @@
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚂</text></svg>">
+    <meta name="description" content="Get real-time NJ Transit train delay SMS alerts for your commute. Free service for NJ Transit commuters.">
     <style>
         :root {
             --primary: #E53935;
@@ -484,24 +486,50 @@
             .nova-feature-right { max-width: 100%; width: 100%; }
             .nova-title { font-size: 1.6rem; }
             .nova-desc { max-width: 100%; }
+            .header h1 { font-size: 1.75rem; }
+            .card { padding: 1.5rem; }
+            .tabs { gap: 0; }
+            .tab { padding: 0.75rem 1rem; flex: 1; text-align: center; font-size: 1rem; }
         }
 
-        @media (max-width: 768px) {
-            .header h1 {
-                font-size: 1.75rem;
-            }
-            .card {
-                padding: 1.5rem;
-            }
-            .tabs {
-                flex-direction: column;
-                gap: 0;
-            }
-            .tab {
-                padding: 0.75rem 1rem;
-                text-align: left;
-            }
+        /* Inline error messages */
+        .error-msg {
+            color: var(--primary);
+            font-size: 0.85rem;
+            margin-top: 0.5rem;
+            display: none;
         }
+        .error-msg.show { display: block; }
+
+        /* Larger checkbox touch targets */
+        .checkbox-group input[type="checkbox"] {
+            width: 20px !important;
+            height: 20px !important;
+            min-width: 20px;
+            cursor: pointer;
+            accent-color: var(--primary);
+        }
+
+        /* Resend / back links in verification box */
+        .verify-actions {
+            display: flex;
+            justify-content: center;
+            gap: 1.5rem;
+            margin-top: 0.75rem;
+            font-size: 0.875rem;
+        }
+        .verify-actions button {
+            background: none;
+            border: none;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.875rem;
+        }
+        .verify-back { color: var(--text-light); }
+        .verify-back:hover { color: var(--text); text-decoration: underline; }
+        .verify-resend { color: var(--primary); font-weight: 600; }
+        .verify-resend:hover { text-decoration: underline; }
+        .verify-resend:disabled { color: var(--text-light); cursor: default; }
     </style>
 </head>
 <body>
@@ -593,7 +621,7 @@
                     <!-- Phone Number -->
                     <div class="form-group">
                         <label for="phone">Your Phone Number <span class="required">*</span></label>
-                        <input type="tel" id="phone" placeholder="(555) 123-4567" required>
+                        <input type="tel" id="phone" placeholder="(555) 123-4567" required autocomplete="tel">
                         <p class="help-text">We'll send alerts to this number</p>
                     </div>
 
@@ -624,14 +652,20 @@
                         </div>
                     </div>
 
+                    <p class="error-msg" id="subscribe-error"></p>
                     <button type="submit" class="btn btn-primary">Subscribe to Alerts</button>
                 </form>
 
                 <div class="verification-box" id="verification-box">
                     <h3>📲 Verify Your Number</h3>
                     <p>We sent a 6-digit code to your phone. Enter it below:</p>
-                    <input type="text" class="code-input" id="verification-code" maxlength="6" placeholder="000000">
-                    <button class="btn btn-primary" onclick="verifyCode()">Verify & Activate</button>
+                    <input type="text" class="code-input" id="verification-code" maxlength="6" placeholder="000000" inputmode="numeric" autocomplete="one-time-code">
+                    <p class="error-msg" id="verify-error"></p>
+                    <button class="btn btn-primary" id="verify-btn" onclick="verifyCode()">Verify & Activate</button>
+                    <div class="verify-actions">
+                        <button type="button" class="verify-back" onclick="goBackToForm()">← Edit selections</button>
+                        <button type="button" class="verify-resend" id="resend-btn" onclick="resendCode()" disabled>Resend code (30s)</button>
+                    </div>
                 </div>
 
                 <div class="success-message" id="success-message">
@@ -669,18 +703,24 @@
                 <form id="unsubscribe-form">
                     <div class="form-group">
                         <label for="unsubscribe-phone">Your Phone Number <span class="required">*</span></label>
-                        <input type="tel" id="unsubscribe-phone" placeholder="(555) 123-4567" required>
+                        <input type="tel" id="unsubscribe-phone" placeholder="(555) 123-4567" required autocomplete="tel">
                         <p class="help-text">The phone number you used to subscribe</p>
                     </div>
 
+                    <p class="error-msg" id="unsubscribe-error"></p>
                     <button type="submit" class="btn btn-secondary">Request Unsubscribe</button>
                 </form>
 
                 <div class="verification-box" id="unsubscribe-verification-box">
                     <h3>📲 Verify Cancellation</h3>
                     <p>We sent a verification code to your phone. Enter it to confirm unsubscribe:</p>
-                    <input type="text" class="code-input" id="unsubscribe-code" maxlength="6" placeholder="000000">
+                    <input type="text" class="code-input" id="unsubscribe-code" maxlength="6" placeholder="000000" inputmode="numeric" autocomplete="one-time-code">
+                    <p class="error-msg" id="unsub-verify-error"></p>
                     <button class="btn btn-secondary" onclick="confirmUnsubscribe()">Confirm Unsubscribe</button>
+                    <div class="verify-actions">
+                        <button type="button" class="verify-back" onclick="goBackToUnsubForm()">← Change number</button>
+                        <button type="button" class="verify-resend" id="unsub-resend-btn" onclick="resendUnsubCode()" disabled>Resend code (30s)</button>
+                    </div>
                 </div>
 
                 <div class="success-message" id="unsubscribe-success">
@@ -887,14 +927,24 @@
             const delayAlerts = document.getElementById('delay-alerts').checked;
             const ontimeAlerts = document.getElementById('ontime-alerts').checked;
             
+            const errorEl = document.getElementById('subscribe-error');
             if (!stationCode || !lineCode || !morningTrain || !eveningTrain || !phone) {
-                alert('Please fill in all required fields!');
+                let missing = [];
+                if (!lineCode) missing.push('train line');
+                if (!stationCode) missing.push('home station');
+                if (!morningTrain) missing.push('train to NYC');
+                if (!eveningTrain) missing.push('train from NYC');
+                if (!phone) missing.push('phone number');
+                errorEl.textContent = 'Please fill in: ' + missing.join(', ');
+                errorEl.classList.add('show');
                 return;
             }
-            
+            errorEl.classList.remove('show');
+
             // Hide form, show verification
             document.getElementById('subscribe-form').style.display = 'none';
             document.getElementById('verification-box').classList.add('show');
+            startResendCountdown('resend-btn');
             
             // In real app: Send API request to backend
             console.log('Subscribe request:', { stationCode, lineCode, morningTrain, eveningTrain, phone, delayAlerts, ontimeAlerts });
@@ -909,19 +959,73 @@
             }));
         });
 
+        // Auto-submit verification when 6 digits entered
+        document.getElementById('verification-code').addEventListener('input', function() {
+            if (this.value.replace(/\D/g,'').length === 6) verifyCode();
+        });
+        document.getElementById('unsubscribe-code').addEventListener('input', function() {
+            if (this.value.replace(/\D/g,'').length === 6) confirmUnsubscribe();
+        });
+
+        // Back to form from verification
+        function goBackToForm() {
+            document.getElementById('verification-box').classList.remove('show');
+            document.getElementById('subscribe-form').style.display = '';
+            document.getElementById('verification-code').value = '';
+            document.getElementById('verify-error').classList.remove('show');
+        }
+        function goBackToUnsubForm() {
+            document.getElementById('unsubscribe-verification-box').classList.remove('show');
+            document.getElementById('unsubscribe-form').style.display = '';
+            document.getElementById('unsubscribe-code').value = '';
+        }
+
+        // Resend countdown
+        let resendTimer = null;
+        function startResendCountdown(btnId) {
+            const btn = document.getElementById(btnId);
+            btn.disabled = true;
+            let secs = 30;
+            btn.textContent = `Resend code (${secs}s)`;
+            resendTimer = setInterval(() => {
+                secs--;
+                if (secs <= 0) {
+                    clearInterval(resendTimer);
+                    btn.disabled = false;
+                    btn.textContent = 'Resend code';
+                } else {
+                    btn.textContent = `Resend code (${secs}s)`;
+                }
+            }, 1000);
+        }
+        function resendCode() {
+            document.getElementById('verification-code').value = '';
+            startResendCountdown('resend-btn');
+            // Re-trigger subscribe API call here if wired up
+            console.log('Resend code requested');
+        }
+        function resendUnsubCode() {
+            document.getElementById('unsubscribe-code').value = '';
+            startResendCountdown('unsub-resend-btn');
+            console.log('Resend unsub code requested');
+        }
+
         // Verification
         function verifyCode() {
-            const code = document.getElementById('verification-code').value;
-            
+            const code = document.getElementById('verification-code').value.replace(/\D/g,'');
+            const errorEl = document.getElementById('verify-error');
+
             if (code.length !== 6) {
-                alert('Please enter a 6-digit code');
+                errorEl.textContent = 'Please enter the 6-digit code from your SMS.';
+                errorEl.classList.add('show');
                 return;
             }
-            
+            errorEl.classList.remove('show');
+
             // Hide verification, show success
             document.getElementById('verification-box').classList.remove('show');
             document.getElementById('success-message').classList.add('show');
-            
+
             // Display subscription details
             const sub = JSON.parse(sessionStorage.getItem('subscription'));
             document.getElementById('success-station').textContent = sub.station;
@@ -937,25 +1041,32 @@
             
             const phone = document.getElementById('unsubscribe-phone').value;
             
+            const unsubError = document.getElementById('unsubscribe-error');
             if (!phone) {
-                alert('Please enter your phone number');
+                unsubError.textContent = 'Please enter your phone number.';
+                unsubError.classList.add('show');
                 return;
             }
-            
+            unsubError.classList.remove('show');
+
             document.getElementById('unsubscribe-form').style.display = 'none';
             document.getElementById('unsubscribe-verification-box').classList.add('show');
-            
+            startResendCountdown('unsub-resend-btn');
+
             console.log('Unsubscribe request:', { phone });
         });
 
         function confirmUnsubscribe() {
-            const code = document.getElementById('unsubscribe-code').value;
-            
+            const code = document.getElementById('unsubscribe-code').value.replace(/\D/g,'');
+            const errorEl = document.getElementById('unsub-verify-error');
+
             if (code.length !== 6) {
-                alert('Please enter a 6-digit code');
+                errorEl.textContent = 'Please enter the 6-digit code from your SMS.';
+                errorEl.classList.add('show');
                 return;
             }
-            
+            errorEl.classList.remove('show');
+
             document.getElementById('unsubscribe-verification-box').classList.remove('show');
             document.getElementById('unsubscribe-success').classList.add('show');
         }

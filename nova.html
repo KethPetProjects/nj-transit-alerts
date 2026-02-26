@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Nova — NJ Transit AI</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚂</text></svg>">
+<meta name="description" content="Nova — NJ Transit AI assistant for train delay alerts.">
 <style>
 :root {
   --bg: #0A0A0F;
@@ -27,7 +29,8 @@ body {
   font-family: 'JetBrains Mono', monospace;
   background: var(--bg);
   color: var(--text);
-  height: 100vh;
+  height: 100vh; /* fallback for older browsers */
+  height: 100dvh;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -483,6 +486,20 @@ body::before {
 a { color: var(--accent2); text-decoration: none; }
 a:hover { text-decoration: underline; }
 
+.form-link {
+  font-size: 0.72rem;
+  color: var(--text-dim);
+  letter-spacing: 0.05em;
+  white-space: nowrap;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  transition: all 0.2s;
+}
+.form-link:hover { color: var(--text); border-color: var(--text-dim); text-decoration: none; }
+
+@media (max-width: 375px) { .form-link { display: none; } }
+
 /* Consent card */
 .consent-card {
   background: #0F1A0F;
@@ -687,6 +704,7 @@ a:hover { text-decoration: underline; }
       ONLINE
     </div>
     <div class="mode-badge">AI</div>
+    <a href="index.html" class="form-link" title="Use the traditional form instead">Form ↗</a>
   </div>
 </div>
 
@@ -695,7 +713,7 @@ a:hover { text-decoration: underline; }
 <div class="input-area">
   <div class="input-inner">
     <input type="text" id="userInput" placeholder="Ask Nova anything..." onkeydown="if(event.key==='Enter')sendMessage()">
-    <button class="send-btn" onclick="sendMessage()" id="sendBtn">➤</button>
+    <button class="send-btn" onclick="sendMessage()" id="sendBtn" aria-label="Send message">➤</button>
   </div>
 </div>
 
@@ -1551,6 +1569,11 @@ async function sendMessage(){
     {name:'🔕 Unsubscribe', code:'unsub'},
     {name:'📋 Check my subscription', code:'check'}
   ], handleMainMenu);
+
+  // Auto-focus input after greeting loads (desktop only — avoids keyboard popup on mobile)
+  if (window.innerWidth > 640) {
+    document.getElementById('userInput').focus();
+  }
 })();
 </script>
 </body>

@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Privacy Policy — NJ Transit Delay Alerts</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚂</text></svg>">
     <style>
         :root {
             --primary: #E53935;
@@ -16,7 +17,15 @@
             --border: #E0E0E0;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); line-height:1.8; }
+        body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); line-height:1.8; font-size:1rem; }
+        .toc { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:1.25rem 1.5rem; margin-bottom:1.5rem; }
+        .toc h3 { font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-light); margin-bottom:0.75rem; }
+        .toc ol { margin:0; padding-left:1.25rem; }
+        .toc li { margin-bottom:0.35rem; font-size:0.9rem; }
+        .toc a { color:var(--primary); text-decoration:none; }
+        .toc a:hover { text-decoration:underline; }
+        .back-to-top { display:block; text-align:right; font-size:0.8rem; color:var(--text-light); margin-top:1.5rem; text-decoration:none; }
+        .back-to-top:hover { color:var(--primary); }
         .header {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white; padding: 2rem; text-align: center;
@@ -54,20 +63,36 @@
 </head>
 <body>
 
-<div class="header">
+<div id="top" class="header">
     <h1>🚂 Privacy Policy</h1>
     <p>NJ Transit Delay Alerts — Last updated February 25, 2026</p>
 </div>
 
 <div class="container">
-    <a href="index.html" class="back-link">← Back to App</a>
+    <a href="#" onclick="history.back(); return false;" class="back-link">← Back</a>
+
+    <div class="toc">
+        <h3>Contents</h3>
+        <ol>
+            <li><a href="#s1">Overview</a></li>
+            <li><a href="#s2">Information We Collect</a></li>
+            <li><a href="#s3">SMS Messaging &amp; Text Alerts</a></li>
+            <li><a href="#s4">How We Use Your Information</a></li>
+            <li><a href="#s5">Data Sharing</a></li>
+            <li><a href="#s6">Data Storage &amp; Security</a></li>
+            <li><a href="#s7">Your Rights</a></li>
+            <li><a href="#s8">Children's Privacy</a></li>
+            <li><a href="#s9">Changes to This Policy</a></li>
+            <li><a href="#s10">Contact Us</a></li>
+        </ol>
+    </div>
 
     <div class="card">
 
-        <h2>1. Overview</h2>
+        <h2 id="s1">1. Overview</h2>
         <p>NJ Transit Delay Alerts ("we," "us," or "our") operates a train delay notification service that sends SMS alerts to NJ Transit commuters. This Privacy Policy explains how we collect, use, and protect your personal information when you use our service at <strong>https://black-plant-0162ad510.4.azurestaticapps.net</strong>.</p>
 
-        <h2>2. Information We Collect</h2>
+        <h2 id="s2">2. Information We Collect</h2>
         <p>We collect only the minimum information necessary to provide the service:</p>
         <ul>
             <li><strong>Mobile phone number</strong> — to send you SMS train alerts</li>
@@ -77,7 +102,7 @@
         </ul>
         <p>We do <strong>not</strong> collect your name, email address, payment information, or any other personal details.</p>
 
-        <h2>3. SMS Messaging & Text Alerts</h2>
+        <h2 id="s3">3. SMS Messaging & Text Alerts</h2>
 
         <div class="sms-box">
             <strong>SMS Consent & Opt-In:</strong> By subscribing through our website and entering your verification code, you expressly consent to receive recurring automated SMS text messages from NJ Transit Delay Alerts at the mobile number you provided. These messages include train delay alerts, cancellation notices, and on-time confirmations for your selected trains.
@@ -99,7 +124,7 @@
 
         <p><strong>Supported carriers:</strong> AT&T, Verizon, T-Mobile, Sprint, and most major US carriers. We are not responsible for delayed or undelivered messages due to carrier issues.</p>
 
-        <h2>4. How We Use Your Information</h2>
+        <h2 id="s4">4. How We Use Your Information</h2>
         <p>We use the information we collect exclusively to:</p>
         <ul>
             <li>Send you SMS train delay and on-time alerts for your selected trains</li>
@@ -108,17 +133,17 @@
         </ul>
         <p>We do <strong>not</strong> use your information for marketing, advertising, or any purpose other than delivering the train alert service you subscribed to.</p>
 
-        <h2>5. Data Sharing</h2>
+        <h2 id="s5">5. Data Sharing</h2>
         <p>We do not sell, rent, or share your personal information with third parties except:</p>
         <ul>
             <li><strong>Twilio</strong> — our SMS delivery provider, used solely to transmit alerts to your phone number. Twilio's privacy policy is available at twilio.com/legal/privacy</li>
             <li><strong>NJ Transit</strong> — we access their public train schedule API to obtain delay information. No personal data is shared with NJ Transit.</li>
         </ul>
 
-        <h2>6. Data Storage & Security</h2>
+        <h2 id="s6">6. Data Storage & Security</h2>
         <p>Your phone number and train preferences are stored in a secure PostgreSQL database hosted on Supabase with industry-standard encryption. We retain your data only as long as your subscription is active. When you unsubscribe, your data is permanently deleted from our database.</p>
 
-        <h2>7. Your Rights</h2>
+        <h2 id="s7">7. Your Rights</h2>
         <p>You have the right to:</p>
         <ul>
             <li>Access the data we hold about you</li>
@@ -126,22 +151,22 @@
             <li>Opt out of SMS messages at any time by replying STOP</li>
         </ul>
 
-        <h2>8. Children's Privacy</h2>
+        <h2 id="s8">8. Children's Privacy</h2>
         <p>This service is not directed to children under 13. We do not knowingly collect personal information from children under 13.</p>
 
-        <h2>9. Changes to This Policy</h2>
+        <h2 id="s9">9. Changes to This Policy</h2>
         <p>We may update this Privacy Policy from time to time. Changes will be posted on this page with an updated date. Continued use of the service after changes constitutes acceptance of the updated policy.</p>
 
-        <h2>10. Contact Us</h2>
+        <h2 id="s10">10. Contact Us</h2>
         <p>If you have questions about this Privacy Policy or our data practices, contact us at:</p>
         <div class="highlight-box">
             <strong>NJ Transit Delay Alerts</strong><br>
-            Email: ketharinath14@gmail.com<br>
-            Website: https://black-plant-0162ad510.4.azurestaticapps.net
+            Email: ketharinath14@gmail.com
         </div>
 
         <div class="updated">Last updated: February 25, 2026</div>
     </div>
+    <a href="#top" class="back-to-top">↑ Back to top</a>
 </div>
 
 </body>

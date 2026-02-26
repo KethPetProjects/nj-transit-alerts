@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Terms & Conditions — NJ Transit Delay Alerts</title>
     <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;700&display=swap" rel="stylesheet">
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚂</text></svg>">
     <style>
         :root {
             --primary: #E53935;
@@ -16,7 +17,15 @@
             --border: #E0E0E0;
         }
         * { margin:0; padding:0; box-sizing:border-box; }
-        body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); line-height:1.8; }
+        body { font-family:'Outfit',sans-serif; background:var(--bg); color:var(--text); line-height:1.8; font-size:1rem; }
+        .toc { background:var(--white); border:1px solid var(--border); border-radius:12px; padding:1.25rem 1.5rem; margin-bottom:1.5rem; }
+        .toc h3 { font-size:0.85rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--text-light); margin-bottom:0.75rem; }
+        .toc ol { margin:0; padding-left:1.25rem; }
+        .toc li { margin-bottom:0.35rem; font-size:0.9rem; }
+        .toc a { color:var(--primary); text-decoration:none; }
+        .toc a:hover { text-decoration:underline; }
+        .back-to-top { display:block; text-align:right; font-size:0.8rem; color:var(--text-light); margin-top:1.5rem; text-decoration:none; }
+        .back-to-top:hover { color:var(--primary); }
         .header {
             background: linear-gradient(135deg, var(--primary), var(--primary-dark));
             color: white; padding: 2rem; text-align: center;
@@ -54,23 +63,40 @@
 </head>
 <body>
 
-<div class="header">
+<div id="top" class="header">
     <h1>🚂 Terms & Conditions</h1>
     <p>NJ Transit Delay Alerts — Last updated February 25, 2026</p>
 </div>
 
 <div class="container">
-    <a href="index.html" class="back-link">← Back to App</a>
+    <a href="#" onclick="history.back(); return false;" class="back-link">← Back</a>
+
+    <div class="toc">
+        <h3>Contents</h3>
+        <ol>
+            <li><a href="#s1">Acceptance of Terms</a></li>
+            <li><a href="#s2">Description of Service</a></li>
+            <li><a href="#s3">SMS Terms &amp; Consent</a></li>
+            <li><a href="#s4">Accuracy of Information</a></li>
+            <li><a href="#s5">No Affiliation with NJ Transit</a></li>
+            <li><a href="#s6">Limitation of Liability</a></li>
+            <li><a href="#s7">User Responsibilities</a></li>
+            <li><a href="#s8">Service Availability</a></li>
+            <li><a href="#s9">Changes to Terms</a></li>
+            <li><a href="#s10">Governing Law</a></li>
+            <li><a href="#s11">Contact</a></li>
+        </ol>
+    </div>
 
     <div class="card">
 
-        <h2>1. Acceptance of Terms</h2>
+        <h2 id="s1">1. Acceptance of Terms</h2>
         <p>By subscribing to NJ Transit Delay Alerts and providing your mobile phone number, you agree to these Terms & Conditions and our <a href="privacy.html">Privacy Policy</a>. If you do not agree, please do not subscribe.</p>
 
-        <h2>2. Description of Service</h2>
+        <h2 id="s2">2. Description of Service</h2>
         <p>NJ Transit Delay Alerts is an independent, free SMS notification service that monitors NJ Transit train schedules and sends text message alerts to subscribers when their selected trains are delayed, cancelled, or running on time. This service is <strong>not affiliated with, endorsed by, or operated by NJ Transit</strong>.</p>
 
-        <h2>3. SMS Terms & Consent</h2>
+        <h2 id="s3">3. SMS Terms & Consent</h2>
 
         <div class="sms-box">
             <strong>By subscribing, you consent to receive recurring automated SMS text messages</strong> from NJ Transit Delay Alerts at the mobile number you provided. These messages include train delay alerts, cancellation notices, and on-time confirmations.
@@ -88,7 +114,7 @@
 
         <p><strong>Supported carriers:</strong> AT&T, Verizon, T-Mobile, Sprint, and most major US carriers.</p>
 
-        <h2>4. Accuracy of Information</h2>
+        <h2 id="s4">4. Accuracy of Information</h2>
         <p>Train delay information is sourced from the NJ Transit Rail Data API. While we strive to provide accurate and timely information, we make no guarantees regarding:</p>
         <ul>
             <li>The accuracy, completeness, or timeliness of delay information</li>
@@ -97,10 +123,10 @@
         </ul>
         <p><strong>Always verify train status through official NJ Transit channels</strong> before making travel decisions. NJ Transit alerts are available at njtransit.com and the NJ Transit mobile app.</p>
 
-        <h2>5. No Affiliation with NJ Transit</h2>
+        <h2 id="s5">5. No Affiliation with NJ Transit</h2>
         <p>NJ Transit Delay Alerts is an independent service created by a commuter for commuters. We are not affiliated with, sponsored by, endorsed by, or in any way officially connected to NJ Transit, the New Jersey Department of Transportation, or any government entity.</p>
 
-        <h2>6. Limitation of Liability</h2>
+        <h2 id="s6">6. Limitation of Liability</h2>
         <p>NJ Transit Delay Alerts is provided "as is" without warranties of any kind. We are not liable for:</p>
         <ul>
             <li>Missed trains, lost time, or financial losses resulting from delayed, missed, or inaccurate alerts</li>
@@ -109,7 +135,7 @@
             <li>Inaccurate data from the NJ Transit API</li>
         </ul>
 
-        <h2>7. User Responsibilities</h2>
+        <h2 id="s7">7. User Responsibilities</h2>
         <p>By using this service, you agree to:</p>
         <ul>
             <li>Provide a valid mobile phone number that you own and are authorized to use</li>
@@ -118,24 +144,24 @@
             <li>Not attempt to reverse engineer or abuse the service</li>
         </ul>
 
-        <h2>8. Service Availability</h2>
+        <h2 id="s8">8. Service Availability</h2>
         <p>We reserve the right to modify, suspend, or discontinue the service at any time without notice. We will make reasonable efforts to notify subscribers of significant changes.</p>
 
-        <h2>9. Changes to Terms</h2>
+        <h2 id="s9">9. Changes to Terms</h2>
         <p>We may update these Terms from time to time. Continued use of the service after changes are posted constitutes your acceptance of the updated Terms.</p>
 
-        <h2>10. Governing Law</h2>
+        <h2 id="s10">10. Governing Law</h2>
         <p>These Terms are governed by the laws of the State of New Jersey, without regard to conflict of law provisions.</p>
 
-        <h2>11. Contact</h2>
+        <h2 id="s11">11. Contact</h2>
         <div class="highlight-box">
             <strong>NJ Transit Delay Alerts</strong><br>
-            Email: ketharinath14@gmail.com<br>
-            Website: https://black-plant-0162ad510.4.azurestaticapps.net
+            Email: ketharinath14@gmail.com
         </div>
 
         <div class="updated">Last updated: February 25, 2026</div>
     </div>
+    <a href="#top" class="back-to-top">↑ Back to top</a>
 </div>
 
 </body>
