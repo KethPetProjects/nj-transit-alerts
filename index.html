@@ -372,7 +372,7 @@
             font-size: 0.95rem;
             line-height: 1.6;
             margin-bottom: 1.5rem;
-            max-width: 380px;
+            max-width: 560px;
         }
 
         .nova-cta {
@@ -405,58 +405,19 @@
             transform: translateX(4px);
         }
 
-        .nova-feature-right {
-            flex: 1;
-            max-width: 340px;
-        }
-
-        .nova-preview {
-            background: #12121A;
-            border: 1px solid #2A2A3E;
-            border-radius: 16px;
-            padding: 1.25rem;
-            display: flex;
-            flex-direction: column;
-            gap: 0.625rem;
-        }
-
-        .nova-preview-msg {
-            display: flex;
-            align-items: flex-start;
-            gap: 0.5rem;
-            font-size: 0.82rem;
-            line-height: 1.5;
-            padding: 0.6rem 0.875rem;
-            border-radius: 12px;
-            animation: previewFade 0.5s ease;
-        }
-
-        @keyframes previewFade {
-            from { opacity: 0; transform: translateY(6px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-
-        .nova-preview-msg.nova-msg {
-            background: #1A1A26;
-            border: 1px solid #2A2A3E;
-            color: #C8C8DC;
-            border-bottom-left-radius: 4px;
-        }
-
-        .nova-preview-icon {
-            color: #E63946;
+        .nova-avatar-right {
             flex-shrink: 0;
-            font-size: 0.75rem;
-            margin-top: 1px;
         }
 
-        .nova-preview-msg.user-msg {
-            background: #E63946;
-            color: white;
-            border-bottom-right-radius: 4px;
-            margin-left: auto;
-            max-width: 80%;
+        .nova-avatar-img {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid rgba(230,57,70,0.5);
+            box-shadow: 0 0 30px rgba(230,57,70,0.3);
         }
+
 
         .consent-box {
             background: #FFF8E1;
@@ -483,8 +444,8 @@
 
         @media (max-width: 768px) {
             .nova-feature-inner { flex-direction: column; gap: 1.5rem; }
-            .nova-feature-right { max-width: 100%; width: 100%; }
             .nova-title { font-size: 1.6rem; }
+            .nova-avatar-img { width: 90px; height: 90px; }
             .nova-desc { max-width: 100%; }
             .header h1 { font-size: 1.75rem; }
             .card { padding: 1.5rem; }
@@ -544,26 +505,15 @@
       <div class="nova-feature-inner">
         <div class="nova-feature-left">
           <div class="nova-badge">✦ AI-POWERED</div>
-          <h2 class="nova-title">Meet <span class="nova-highlight">Nova</span></h2>
-          <p class="nova-desc">Skip the form. Chat with Nova — our AI assistant that sets up your alerts through natural conversation. Smarter, faster, more fun.</p>
+          <h2 class="nova-title">Meet <span class="nova-highlight">Ramiya</span></h2>
+          <p class="nova-desc">Skip the form. Chat with Ramiya — our AI assistant that sets up your alerts through natural conversation. Smarter, faster, more fun.</p>
           <a href="nova.html" class="nova-cta">
-            <span>Launch Nova</span>
+            <span>Chat with Ramiya</span>
             <span class="nova-cta-arrow">→</span>
           </a>
         </div>
-        <div class="nova-feature-right">
-          <div class="nova-preview">
-            <div class="nova-preview-msg nova-msg">
-              <span class="nova-preview-icon">✦</span>
-              <span>Good morning! I'm Nova. Which line do you commute on?</span>
-            </div>
-            <div class="nova-preview-msg user-msg">Northeast Corridor, Princeton Junction</div>
-            <div class="nova-preview-msg nova-msg">
-              <span class="nova-preview-icon">✦</span>
-              <span>Got it! What time do you usually head to NYC?</span>
-            </div>
-            <div class="nova-preview-msg user-msg">Around 7:45 AM</div>
-          </div>
+        <div class="nova-avatar-right">
+          <img src="Ramiya_avatar.jpg" alt="Ramiya AI Assistant" class="nova-avatar-img">
         </div>
       </div>
     </div>
