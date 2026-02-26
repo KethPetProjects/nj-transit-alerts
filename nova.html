@@ -1158,6 +1158,11 @@ async function handlePostChip(opt){
 // Main menu chip handler
 async function handleMainMenu(opt){
   addMessage('user', opt.name||opt.label);
+  if(opt.code==='mainapp'){
+    window.open('https://black-plant-0162ad510.4.azurestaticapps.net', '_blank');
+    await novaSay('Opening the main app! 🚂');
+    return;
+  }
   if(opt.code==='sub'){
     resetState();
     const resp = await callNova("User wants to subscribe. Ask which line they commute on.");
