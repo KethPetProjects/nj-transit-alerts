@@ -337,6 +337,13 @@
 
         .nova-feature-left {
             flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 1.5rem;
+        }
+
+        .nova-feature-text {
+            flex: 1;
         }
 
         .nova-badge {
@@ -405,17 +412,14 @@
             transform: translateX(4px);
         }
 
-        .nova-avatar-right {
-            flex-shrink: 0;
-        }
-
         .nova-avatar-img {
-            width: 130px;
-            height: 130px;
+            width: 90px;
+            height: 90px;
             border-radius: 50%;
             object-fit: cover;
-            border: 3px solid rgba(230,57,70,0.5);
-            box-shadow: 0 0 30px rgba(230,57,70,0.3);
+            border: 2px solid rgba(230,57,70,0.5);
+            box-shadow: 0 0 20px rgba(230,57,70,0.3);
+            flex-shrink: 0;
         }
 
 
@@ -443,9 +447,9 @@
         }
 
         @media (max-width: 768px) {
-            .nova-feature-inner { flex-direction: column; gap: 1.5rem; }
             .nova-title { font-size: 1.6rem; }
-            .nova-avatar-img { width: 90px; height: 90px; }
+            .nova-feature-left { flex-direction: column; align-items: flex-start; }
+            .nova-avatar-img { width: 64px; height: 64px; }
             .nova-desc { max-width: 100%; }
             .header h1 { font-size: 1.75rem; }
             .card { padding: 1.5rem; }
@@ -504,16 +508,16 @@
     <div class="nova-feature">
       <div class="nova-feature-inner">
         <div class="nova-feature-left">
-          <div class="nova-badge">✦ AI-POWERED</div>
-          <h2 class="nova-title">Meet <span class="nova-highlight">Ramiya</span></h2>
-          <p class="nova-desc">Skip the form. Chat with Ramiya — our AI assistant that sets up your alerts through natural conversation. Smarter, faster, more fun.</p>
-          <a href="nova.html" class="nova-cta">
-            <span>Chat with Ramiya</span>
-            <span class="nova-cta-arrow">→</span>
-          </a>
-        </div>
-        <div class="nova-avatar-right">
-          <img src="Ramiya_avatar.jpg" alt="Ramiya AI Assistant" class="nova-avatar-img">
+          <img src="Ramiya_avatar.jpg" alt="Ramiya" class="nova-avatar-img">
+          <div class="nova-feature-text">
+            <div class="nova-badge">✦ AI-POWERED</div>
+            <h2 class="nova-title">Meet <span class="nova-highlight">Ramiya</span></h2>
+            <p class="nova-desc">Skip the form. Chat with Ramiya — our AI assistant that sets up your alerts through natural conversation. Smarter, faster, more fun.</p>
+            <a href="nova.html" class="nova-cta">
+              <span>Chat with Ramiya</span>
+              <span class="nova-cta-arrow">→</span>
+            </a>
+          </div>
         </div>
       </div>
     </div>
