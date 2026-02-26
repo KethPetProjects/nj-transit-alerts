@@ -306,6 +306,186 @@
             100% { transform: rotate(360deg); }
         }
 
+        /* Nova Feature Section */
+        .nova-feature {
+            background: linear-gradient(135deg, #0D0D14 0%, #1A1020 100%);
+            padding: 2.5rem 2rem;
+            position: relative;
+            overflow: hidden;
+        }
+
+        .nova-feature::before {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background-image: linear-gradient(rgba(230,57,70,0.04) 1px, transparent 1px),
+                              linear-gradient(90deg, rgba(230,57,70,0.04) 1px, transparent 1px);
+            background-size: 30px 30px;
+        }
+
+        .nova-feature-inner {
+            max-width: 900px;
+            margin: 0 auto;
+            display: flex;
+            align-items: center;
+            gap: 3rem;
+            position: relative;
+            z-index: 1;
+        }
+
+        .nova-feature-left {
+            flex: 1;
+        }
+
+        .nova-badge {
+            display: inline-flex;
+            align-items: center;
+            padding: 0.3rem 0.75rem;
+            background: rgba(230,57,70,0.15);
+            border: 1px solid rgba(230,57,70,0.3);
+            border-radius: 50px;
+            font-size: 0.7rem;
+            font-weight: 700;
+            color: #E63946;
+            letter-spacing: 0.1em;
+            margin-bottom: 0.875rem;
+            font-family: monospace;
+        }
+
+        .nova-title {
+            font-size: 2rem;
+            font-weight: 700;
+            color: white;
+            margin-bottom: 0.75rem;
+            line-height: 1.2;
+        }
+
+        .nova-highlight {
+            color: #E63946;
+            font-style: italic;
+        }
+
+        .nova-desc {
+            color: #9090A8;
+            font-size: 0.95rem;
+            line-height: 1.6;
+            margin-bottom: 1.5rem;
+            max-width: 380px;
+        }
+
+        .nova-cta {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.75rem 1.75rem;
+            background: #E63946;
+            color: white;
+            border-radius: 10px;
+            font-size: 0.95rem;
+            font-weight: 600;
+            text-decoration: none;
+            transition: all 0.2s;
+            box-shadow: 0 4px 20px rgba(230,57,70,0.35);
+        }
+
+        .nova-cta:hover {
+            background: #FF4757;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 24px rgba(230,57,70,0.45);
+        }
+
+        .nova-cta-arrow {
+            font-size: 1.1rem;
+            transition: transform 0.2s;
+        }
+
+        .nova-cta:hover .nova-cta-arrow {
+            transform: translateX(4px);
+        }
+
+        .nova-feature-right {
+            flex: 1;
+            max-width: 340px;
+        }
+
+        .nova-preview {
+            background: #12121A;
+            border: 1px solid #2A2A3E;
+            border-radius: 16px;
+            padding: 1.25rem;
+            display: flex;
+            flex-direction: column;
+            gap: 0.625rem;
+        }
+
+        .nova-preview-msg {
+            display: flex;
+            align-items: flex-start;
+            gap: 0.5rem;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            padding: 0.6rem 0.875rem;
+            border-radius: 12px;
+            animation: previewFade 0.5s ease;
+        }
+
+        @keyframes previewFade {
+            from { opacity: 0; transform: translateY(6px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .nova-preview-msg.nova-msg {
+            background: #1A1A26;
+            border: 1px solid #2A2A3E;
+            color: #C8C8DC;
+            border-bottom-left-radius: 4px;
+        }
+
+        .nova-preview-icon {
+            color: #E63946;
+            flex-shrink: 0;
+            font-size: 0.75rem;
+            margin-top: 1px;
+        }
+
+        .nova-preview-msg.user-msg {
+            background: #E63946;
+            color: white;
+            border-bottom-right-radius: 4px;
+            margin-left: auto;
+            max-width: 80%;
+        }
+
+        .consent-box {
+            background: #FFF8E1;
+            border: 1px solid #FFE082;
+            border-radius: 10px;
+            padding: 1rem;
+            margin-bottom: 1.5rem;
+        }
+
+        .consent-box .checkbox-group {
+            align-items: flex-start;
+        }
+
+        .consent-box label {
+            font-size: 0.85rem;
+            color: #555;
+            line-height: 1.5;
+            font-weight: 400;
+        }
+
+        .consent-box a {
+            color: var(--primary);
+        }
+
+        @media (max-width: 768px) {
+            .nova-feature-inner { flex-direction: column; gap: 1.5rem; }
+            .nova-feature-right { max-width: 100%; width: 100%; }
+            .nova-title { font-size: 1.6rem; }
+            .nova-desc { max-width: 100%; }
+        }
+
         @media (max-width: 768px) {
             .header h1 {
                 font-size: 1.75rem;
@@ -331,11 +511,33 @@
         <p>Never miss your train • Get real-time delay notifications</p>
     </div>
 
-    <!-- Nova AI Banner -->
-    <div style="background:linear-gradient(135deg,#0A0A0F,#1A1A26);border-bottom:1px solid #2A2A3E;padding:0.75rem 2rem;display:flex;align-items:center;justify-content:center;gap:1rem;flex-wrap:wrap;">
-      <span style="color:#6B6B8A;font-size:0.85rem;font-family:monospace;">✦ NEW</span>
-      <span style="color:#E8E8F0;font-size:0.9rem;font-weight:500;">Try <strong style="color:#E63946;">Nova</strong> — our AI-powered setup assistant</span>
-      <a href="nova.html" style="padding:0.4rem 1.25rem;background:#E63946;color:white;border-radius:6px;font-size:0.85rem;font-weight:600;text-decoration:none;letter-spacing:0.03em;transition:all 0.2s;" onmouseover="this.style.background='#FF4757'" onmouseout="this.style.background='#E63946'">Launch Nova →</a>
+    <!-- Nova AI Feature Card -->
+    <div class="nova-feature">
+      <div class="nova-feature-inner">
+        <div class="nova-feature-left">
+          <div class="nova-badge">✦ AI-POWERED</div>
+          <h2 class="nova-title">Meet <span class="nova-highlight">Nova</span></h2>
+          <p class="nova-desc">Skip the form. Chat with Nova — our AI assistant that sets up your alerts through natural conversation. Smarter, faster, more fun.</p>
+          <a href="nova.html" class="nova-cta">
+            <span>Launch Nova</span>
+            <span class="nova-cta-arrow">→</span>
+          </a>
+        </div>
+        <div class="nova-feature-right">
+          <div class="nova-preview">
+            <div class="nova-preview-msg nova-msg">
+              <span class="nova-preview-icon">✦</span>
+              <span>Good morning! I'm Nova. Which line do you commute on?</span>
+            </div>
+            <div class="nova-preview-msg user-msg">Northeast Corridor, Princeton Junction</div>
+            <div class="nova-preview-msg nova-msg">
+              <span class="nova-preview-icon">✦</span>
+              <span>Got it! What time do you usually head to NYC?</span>
+            </div>
+            <div class="nova-preview-msg user-msg">Around 7:45 AM</div>
+          </div>
+        </div>
+      </div>
     </div>
 
     <div class="container">
@@ -405,6 +607,20 @@
                         <div class="checkbox-group">
                             <input type="checkbox" id="ontime-alerts" checked>
                             <label for="ontime-alerts">On-time confirmations (30 min before departure)</label>
+                        </div>
+                    </div>
+
+                    <!-- SMS Consent Checkbox (required for Twilio A2P compliance) -->
+                    <div class="consent-box">
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="sms-consent" required>
+                            <label for="sms-consent">
+                                I agree to receive SMS train delay alerts from <strong>NJ Transit Delay Alerts</strong>. 
+                                Message frequency varies based on train delays. Message &amp; data rates may apply. 
+                                Reply <strong>STOP</strong> to unsubscribe, <strong>HELP</strong> for help. 
+                                <a href="privacy.html" target="_blank">Privacy Policy</a> · 
+                                <a href="terms.html" target="_blank">Terms</a>
+                            </label>
                         </div>
                     </div>
 

@@ -837,6 +837,18 @@ async function handlePhone(text){
     return;
   }
   state.phone=text;
+  // Show consent before summary
+  await novaSay("Almost there! One quick thing — by subscribing you agree to receive SMS train delay alerts from NJ Transit Delay Alerts. Message frequency varies. Msg & data rates may apply. Reply STOP anytime to unsubscribe. Good?");
+  state.step='consent';
+  showChips([{name:'✓ I agree, continue', code:'agree'},{name:'✕ Cancel', code:'cancel'}], async opt => {
+    addMessage('user', opt.name);
+    if(opt.code==='cancel'){ await novaSay("No problem! Come back anytime. 🚂"); return; }
+    state.step='phone_confirmed';
+    await continueAfterConsent();
+  });
+}
+
+async function continueAfterConsent(){
   // Show summary
   const summary=document.createElement('div');
   summary.className='summary-card';
