@@ -832,20 +832,19 @@
                 
                 const trains = await response.json();
                 
-                // Get line name for filtering
-                const selectedLine = document.getElementById('train-line').selectedOptions[0].textContent;
-                
-                // Filter trains by selected line
+                // Filter trains by selected line using keyword matching
                 const filterByLine = (trainList) => {
-                    return trainList.filter(train => {
-                        // Match if train's line contains the selected line name
-                        // or if it's a common line (NEC, NJCL, etc.)
-                        const trainLine = train.line || '';
-                        return trainLine.includes(selectedLine) || 
-                               trainLine.includes(getLineAbbreviation(lineCode));
+                    if (!trainList || trainList.length === 0) return [];
+                    const keywords = getLineKeywords(lineCode);
+                    const filtered = trainList.filter(train => {
+                        const trainLine = (train.line || '').toLowerCase();
+                        return keywords.some(kw => trainLine.includes(kw));
                     });
+                    // Fallback: if all trains were filtered out, show all of them
+                    return filtered.length > 0 ? filtered : trainList;
                 };
-                
+
+                console.log('API response:', JSON.stringify(trains).slice(0, 300));
                 const filteredOutbound = filterByLine(trains.outbound || []);
                 const filteredInbound = filterByLine(trains.inbound || []);
                 
@@ -887,21 +886,21 @@
             }
         }
         
-        // Helper function to get line abbreviation for filtering
-        function getLineAbbreviation(lineCode) {
+        // Keywords to match against the API's train.line field (case-insensitive)
+        function getLineKeywords(lineCode) {
             const lineMap = {
-                'AC': 'Atlantic City',
-                'BC': 'Bergen County',
-                'GS': 'Gladstone',
-                'MC': 'Montclair',
-                'ME': 'Morris',
-                'ML': 'Main',
-                'NC': 'Coast',
-                'NE': 'Northeast|Corridor|NEC',
-                'PV': 'Pascack',
-                'RV': 'Raritan'
+                'AC': ['atlantic city', 'atlantic'],
+                'BC': ['bergen county', 'bergen'],
+                'GS': ['gladstone'],
+                'MC': ['montclair', 'boonton'],
+                'ME': ['morris', 'essex'],
+                'ML': ['main line', 'main'],
+                'NC': ['north jersey coast', 'coast', 'njcl'],
+                'NE': ['northeast corridor', 'northeast', 'corridor', 'nec'],
+                'PV': ['pascack'],
+                'RV': ['raritan']
             };
-            return lineMap[lineCode] || '';
+            return lineMap[lineCode] || [];
         }
 
         // Tab switching
