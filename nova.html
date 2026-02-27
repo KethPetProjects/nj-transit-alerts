@@ -6,7 +6,7 @@
 <title>Ramiya — NJ Transit AI</title>
 <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=JetBrains+Mono:wght@300;400;500&display=swap" rel="stylesheet">
 <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🚂</text></svg>">
-<meta name="description" content="Nova — NJ Transit AI assistant for train delay alerts.">
+<meta name="description" content="Ramiya — NJ Transit AI assistant for train delay alerts.">
 <style>
 :root {
   --bg: #0A0A0F;
@@ -724,7 +724,7 @@ a:hover { text-decoration: underline; }
 
 <div class="input-area">
   <div class="input-inner">
-    <input type="text" id="userInput" placeholder="Ask Nova anything..." onkeydown="if(event.key==='Enter')sendMessage()">
+    <input type="text" id="userInput" placeholder="Ask Ramiya anything..." onkeydown="if(event.key==='Enter')sendMessage()">
     <button class="send-btn" onclick="sendMessage()" id="sendBtn" aria-label="Send message">➤</button>
   </div>
 </div>
@@ -1355,7 +1355,7 @@ async function handlePostChip(opt){
       await novaSay(`The main app is at: <a href="https://black-plant-0162ad510.4.azurestaticapps.net" target="_blank">NJ Transit Alerts ↗</a>`);
       break;
     case 'howto':
-      await novaSay("Nova checks your trains every 5 minutes. If there's a delay over 5 minutes or a cancellation, you get an SMS instantly. On-time? You get a heads-up 30 minutes before departure. ⏱️");
+      await novaSay("Ramiya checks your trains every 5 minutes. If there's a delay over 5 minutes or a cancellation, you get an SMS instantly. On-time? You get a heads-up 30 minutes before departure. ⏱️");
       break;
   }
   await delay(300);
