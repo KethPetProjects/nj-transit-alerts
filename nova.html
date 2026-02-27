@@ -972,10 +972,15 @@ async function loadAllTrains(){
 function showTrainCards(trains, type){
   const wrapper = document.createElement('div');
   wrapper.className = 'train-cards';
+  const dirLabel = document.createElement('div');
+  dirLabel.style.cssText = 'font-size:0.7rem;color:var(--text-dim);margin-bottom:0.4rem;letter-spacing:0.05em;text-transform:uppercase;';
+  dirLabel.textContent = type === 'morning' ? '↑ Toward New York Penn' : '↓ From New York Penn';
+  wrapper.appendChild(dirLabel);
   trains.forEach(train => {
     const card = document.createElement('div');
     card.className = 'train-card';
-    card.innerHTML = `<span class="train-num">→ ${train.id}</span><span class="train-time">${train.time}</span><span class="train-dest">${train.destination}</span>`;
+    const dest = type === 'morning' ? (train.destination || 'New York Penn') : `to ${state.stationName || train.destination}`;
+    card.innerHTML = `<span class="train-num">#${train.id}</span><span class="train-time">${train.time}</span><span class="train-dest">${dest}</span>`;
     card.onclick = async () => {
       wrapper.querySelectorAll('.train-card').forEach(c=>{c.classList.add('disabled');c.classList.remove('selected')});
       card.classList.add('selected'); card.classList.remove('disabled');
