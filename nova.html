@@ -1377,7 +1377,7 @@ async function handleMainMenu(opt){
   }
   if(opt.code==='sub'){
     resetState();
-    const resp = await callNova("User wants to subscribe. Ask which line they commute on.");
+    const resp = await callNova("User wants to subscribe. Ask which line they commute on. Do NOT list the line options — the UI will show tap buttons for them.");
     await novaSay(parseNovaResponse(resp).clean);
     state.step='line';
     showChips(LINES, selectLine);
