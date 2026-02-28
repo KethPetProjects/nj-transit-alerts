@@ -671,18 +671,26 @@
                 <!-- ntfy setup box: shown immediately after subscribe (no phone) -->
                 <div class="verification-box" id="ntfy-setup-box">
                     <div class="success-icon">✅</div>
-                    <h3>You're subscribed! Set up push notifications</h3>
-                    <p>Install the free <strong>ntfy</strong> app, then subscribe to your personal topic to receive train alerts on your phone.</p>
+                    <h3>You're subscribed! One last step.</h3>
+                    <p style="margin-bottom:1rem">To receive alerts, set up the free <strong>ntfy</strong> push notification app:</p>
+                    <ol style="text-align:left;line-height:2;margin:0 0 1rem 1.2rem;font-size:0.95rem">
+                        <li><strong>Install the ntfy app</strong> —
+                            <a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank">App Store</a> or
+                            <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank">Play Store</a>
+                        </li>
+                        <li><strong>Open the app</strong> → tap the <strong>+</strong> button → tap <strong>Scan QR code</strong></li>
+                        <li>Scan the code below — you'll be subscribed to your personal alert channel instantly</li>
+                    </ol>
                     <div style="margin:1rem 0;text-align:center">
                         <img id="ntfy-qr" src="" alt="QR code" style="width:160px;height:160px;border-radius:8px;border:2px solid var(--border)">
-                        <p style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted)">Scan with the ntfy app to subscribe instantly</p>
+                        <p style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted)">Or type the topic name manually in the ntfy app</p>
                     </div>
                     <div style="background:var(--surface);border-radius:8px;padding:0.75rem;margin:0.5rem 0;word-break:break-all;font-family:monospace;font-size:0.85rem" id="ntfy-topic-display"></div>
-                    <p style="font-size:0.8rem;color:var(--text-muted)">
-                        📱 <a href="https://ntfy.sh" target="_blank">ntfy.sh</a> is a free push notification service — no account needed.<br>
-                        🔒 Keep your topic link private — it's your personal notification channel.
+                    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.75rem">
+                        🔒 Keep your topic link private — it's your personal notification channel.<br>
+                        💡 Share it with family so they get alerts too.
                     </p>
-                    <a id="ntfy-manage-link" href="#" class="btn btn-primary" style="display:inline-block;margin-top:0.5rem;text-decoration:none">Manage / Unsubscribe →</a>
+                    <a id="ntfy-manage-link" href="#" class="btn btn-primary" style="display:inline-block;margin-top:0.75rem;text-decoration:none">Manage / Unsubscribe →</a>
                 </div>
 
                 <div class="success-message" id="success-message">
@@ -726,18 +734,23 @@
             <!-- Unsubscribe Tab -->
             <div class="tab-content" id="unsubscribe-tab">
                 <div class="info-box">
-                    <strong>Unsubscribe:</strong> Enter your phone number and we'll send you a verification code to confirm the cancellation.
+                    <strong>How to unsubscribe:</strong>
+                    <ol style="margin:0.5rem 0 0 1.2rem;line-height:1.8">
+                        <li><strong>Easiest:</strong> Tap any alert notification you received → it opens your manage page → tap Unsubscribe.</li>
+                        <li><strong>Or:</strong> Use the manage link you saved when you subscribed.</li>
+                        <li><strong>SMS subscribers only:</strong> Enter your phone number below to receive an unsubscribe code.</li>
+                    </ol>
                 </div>
 
                 <form id="unsubscribe-form">
                     <div class="form-group">
-                        <label for="unsubscribe-phone">Your Phone Number <span class="required">*</span></label>
-                        <input type="tel" id="unsubscribe-phone" placeholder="(555) 123-4567" required autocomplete="tel">
-                        <p class="help-text">The phone number you used to subscribe</p>
+                        <label for="unsubscribe-phone">Phone Number <span style="font-weight:400;color:var(--text-muted)">(SMS subscribers only)</span></label>
+                        <input type="tel" id="unsubscribe-phone" placeholder="(555) 123-4567" autocomplete="tel">
+                        <p class="help-text">Only needed if you subscribed with a phone number</p>
                     </div>
 
                     <p class="error-msg" id="unsubscribe-error"></p>
-                    <button type="submit" class="btn btn-secondary">Request Unsubscribe</button>
+                    <button type="submit" class="btn btn-secondary">Send Unsubscribe Code</button>
                 </form>
 
                 <div class="verification-box" id="unsubscribe-verification-box">
@@ -990,11 +1003,15 @@
             fetch(`${API_BASE}/manage/${topic}`)
                 .then(r => r.ok ? r.json() : Promise.reject())
                 .then(sub => {
+                    const stationLabel = sub.station_name && sub.station_name !== sub.station
+                        ? `${sub.station_name} (${sub.station})`
+                        : (sub.station || '—');
                     document.getElementById('manage-details').innerHTML = `
-                        <p><strong>Morning Train:</strong> ${sub.morning_train}</p>
-                        <p><strong>Evening Train:</strong> ${sub.evening_train}</p>
-                        <p><strong>Station:</strong> ${sub.station || '—'}</p>
-                        <p><strong>ntfy Topic:</strong> <span style="font-family:monospace;font-size:0.85rem">${sub.ntfy_topic}</span></p>`;
+                        <p><strong>Home Station:</strong> ${stationLabel}</p>
+                        <p><strong>Morning Train:</strong> Train #${sub.morning_train} → toward New York</p>
+                        <p><strong>Evening Train:</strong> Train #${sub.evening_train} → toward home</p>
+                        <p><strong>Alerts:</strong> ${[sub.delay_alerts ? 'Delays & cancellations' : '', sub.ontime_alerts ? 'On-time confirmation' : ''].filter(Boolean).join(' · ')}</p>
+                        <p style="margin-top:0.5rem"><strong>ntfy Topic:</strong><br><span style="font-family:monospace;font-size:0.8rem;word-break:break-all">${sub.ntfy_topic}</span></p>`;
                     window._manageTopic = topic;
                 })
                 .catch(() => {
@@ -1271,8 +1288,8 @@
             const unsubError = document.getElementById('unsubscribe-error');
             const submitBtn = this.querySelector('button[type="submit"]');
 
-            if (!phone) {
-                unsubError.textContent = 'Please enter your phone number.';
+            if (!phone || phone.replace(/\D/g,'').length < 10) {
+                unsubError.textContent = 'Please enter the 10-digit phone number you subscribed with. If you subscribed without a phone, tap the manage link in any alert notification instead.';
                 unsubError.classList.add('show');
                 return;
             }
