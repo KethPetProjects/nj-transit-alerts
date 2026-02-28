@@ -1423,8 +1423,9 @@ async function handlePostChip(opt){
       showChips(LINES, selectLine);
       return;
     case 'mainapp':
-      await novaSay(`The main app is at: <a href="https://black-plant-0162ad510.4.azurestaticapps.net" target="_blank">NJ Transit Alerts ↗</a>`);
-      break;
+      window.open('https://black-plant-0162ad510.4.azurestaticapps.net', '_blank');
+      await novaSay('Opening the main app! 🚂');
+      return;
     case 'howto':
       await novaSay("Ramiya checks your trains every 5 minutes. If there's a delay over 5 minutes or a cancellation, you get an SMS instantly. On-time? You get a heads-up 30 minutes before departure. ⏱️");
       break;
