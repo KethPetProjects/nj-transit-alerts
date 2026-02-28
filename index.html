@@ -683,14 +683,26 @@
                     </ol>
                     <div style="margin:1rem 0;text-align:center">
                         <img id="ntfy-qr" src="" alt="QR code" style="width:160px;height:160px;border-radius:8px;border:2px solid var(--border)">
-                        <p style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted)">Or type the topic name manually in the ntfy app</p>
+                        <p style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted)">Scan from another device — or use the options below on this phone</p>
                     </div>
-                    <div style="background:var(--surface);border-radius:8px;padding:0.75rem;margin:0.5rem 0;word-break:break-all;font-family:monospace;font-size:0.85rem" id="ntfy-topic-display"></div>
-                    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.75rem">
-                        🔒 Keep your topic link private — it's your personal notification channel.<br>
+
+                    <!-- Tap to copy topic -->
+                    <p style="font-size:0.8rem;margin-bottom:0.3rem;color:var(--text-muted)">Your personal topic — tap to copy:</p>
+                    <div onclick="copyNtfyTopic(this)"
+                         style="background:var(--surface);border-radius:8px;padding:0.75rem 1rem;margin:0 0 0.5rem;word-break:break-all;font-family:monospace;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;border:1px solid var(--border)"
+                         id="ntfy-topic-display">
+                        <span id="ntfy-topic-text"></span>
+                        <span id="ntfy-copy-label" style="font-family:sans-serif;font-size:0.75rem;white-space:nowrap;color:var(--text-muted)">📋 Tap to copy</span>
+                    </div>
+
+                    <!-- Open in ntfy app deep link -->
+                    <a id="ntfy-open-btn" href="#" class="btn btn-primary" style="display:block;text-decoration:none;margin-bottom:0.5rem">📱 Open in ntfy app →</a>
+
+                    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem">
+                        🔒 Keep your topic private — it's your personal alert channel.<br>
                         💡 Share it with family so they get alerts too.
                     </p>
-                    <a id="ntfy-manage-link" href="#" class="btn btn-primary" style="display:inline-block;margin-top:0.75rem;text-decoration:none">Manage / Unsubscribe →</a>
+                    <a id="ntfy-manage-link" href="#" class="btn btn-secondary" style="display:inline-block;margin-top:0.5rem;text-decoration:none">Manage / Unsubscribe →</a>
                 </div>
 
                 <div class="success-message" id="success-message">
@@ -1019,6 +1031,21 @@
                 });
         })();
 
+        function copyNtfyTopic(el) {
+            const topic = document.getElementById('ntfy-topic-text').textContent;
+            navigator.clipboard.writeText(topic).then(() => {
+                const label = document.getElementById('ntfy-copy-label');
+                label.textContent = '✅ Copied!';
+                setTimeout(() => { label.textContent = '📋 Tap to copy'; }, 2000);
+            }).catch(() => {
+                // Fallback for browsers without clipboard API
+                const range = document.createRange();
+                range.selectNode(document.getElementById('ntfy-topic-text'));
+                window.getSelection().removeAllRanges();
+                window.getSelection().addRange(range);
+            });
+        }
+
         async function confirmUnsubscribeByTopic() {
             if (!window._manageTopic) return;
             if (!confirm('Are you sure you want to unsubscribe?')) return;
@@ -1147,7 +1174,8 @@
                 // No-phone flow — show ntfy setup box immediately
                 const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://ntfy.sh/${subscribeNtfyTopic}`;
                 document.getElementById('ntfy-qr').src = qrUrl;
-                document.getElementById('ntfy-topic-display').textContent = `ntfy.sh/${subscribeNtfyTopic}`;
+                document.getElementById('ntfy-topic-text').textContent = `ntfy.sh/${subscribeNtfyTopic}`;
+                document.getElementById('ntfy-open-btn').href = `ntfy://${subscribeNtfyTopic}`;
                 document.getElementById('ntfy-manage-link').href = manageUrl;
                 document.getElementById('ntfy-setup-box').classList.add('show');
             }
