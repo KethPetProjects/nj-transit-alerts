@@ -660,6 +660,12 @@
                         <button type="button" class="verify-back" onclick="goBackToForm()">← Edit selections</button>
                         <button type="button" class="verify-resend" id="resend-btn" onclick="resendCode()" disabled>Resend code (30s)</button>
                     </div>
+                    <!-- Show ntfy topic while user waits for SMS code -->
+                    <div id="verify-ntfy-hint" style="display:none;margin-top:1rem;padding:0.75rem;background:var(--surface);border-radius:8px;border:1px solid var(--border)">
+                        <p style="font-size:0.8rem;margin-bottom:0.4rem">🔔 <strong>While you wait</strong> — set up push notifications too:</p>
+                        <div style="font-family:monospace;font-size:0.8rem;word-break:break-all;padding:0.3rem 0.5rem;background:rgba(0,0,0,0.05);border-radius:4px" id="verify-ntfy-topic"></div>
+                        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.4rem">Install the <a href="https://ntfy.sh" target="_blank">ntfy app</a> and subscribe to the topic above.</p>
+                    </div>
                 </div>
 
                 <!-- ntfy setup box: shown immediately after subscribe (no phone) -->
@@ -1115,6 +1121,11 @@
                 // Phone flow — show verification box
                 document.getElementById('verification-box').classList.add('show');
                 startResendCountdown('resend-btn');
+                // Also show the ntfy topic in the verification box while they wait
+                if (subscribeNtfyTopic) {
+                    document.getElementById('verify-ntfy-topic').textContent = `ntfy.sh/${subscribeNtfyTopic}`;
+                    document.getElementById('verify-ntfy-hint').style.display = '';
+                }
             } else {
                 // No-phone flow — show ntfy setup box immediately
                 const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://ntfy.sh/${subscribeNtfyTopic}`;
