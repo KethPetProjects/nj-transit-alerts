@@ -669,7 +669,7 @@
                 </div>
 
                 <!-- ntfy setup box: shown immediately after subscribe (no phone) -->
-                <div class="verification-box" id="ntfy-setup-box" style="display:none">
+                <div class="verification-box" id="ntfy-setup-box">
                     <div class="success-icon">✅</div>
                     <h3>You're subscribed! Set up push notifications</h3>
                     <p>Install the free <strong>ntfy</strong> app, then subscribe to your personal topic to receive train alerts on your phone.</p>
@@ -1132,7 +1132,7 @@
                 document.getElementById('ntfy-qr').src = qrUrl;
                 document.getElementById('ntfy-topic-display').textContent = `ntfy.sh/${subscribeNtfyTopic}`;
                 document.getElementById('ntfy-manage-link').href = manageUrl;
-                document.getElementById('ntfy-setup-box').style.display = '';
+                document.getElementById('ntfy-setup-box').classList.add('show');
             }
 
             // Store for success message
