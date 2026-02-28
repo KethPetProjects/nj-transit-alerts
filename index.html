@@ -1033,13 +1033,12 @@
             const ontimeAlerts = document.getElementById('ontime-alerts').checked;
 
             const errorEl = document.getElementById('subscribe-error');
-            if (!stationCode || !lineCode || !morningTrain || !eveningTrain || !phone) {
+            if (!stationCode || !lineCode || !morningTrain || !eveningTrain) {
                 let missing = [];
                 if (!lineCode) missing.push('train line');
                 if (!stationCode) missing.push('home station');
                 if (!morningTrain) missing.push('train to NYC');
                 if (!eveningTrain) missing.push('train from NYC');
-                if (!phone) missing.push('phone number');
                 errorEl.textContent = 'Please fill in: ' + missing.join(', ');
                 errorEl.classList.add('show');
                 return;
