@@ -572,11 +572,11 @@
                         <p class="help-text">Your usual train heading home</p>
                     </div>
 
-                    <!-- Phone Number -->
+                    <!-- Phone Number (optional) -->
                     <div class="form-group">
-                        <label for="phone">Your Phone Number <span class="required">*</span></label>
-                        <input type="tel" id="phone" placeholder="(555) 123-4567" required autocomplete="tel">
-                        <p class="help-text">We'll send alerts to this number</p>
+                        <label for="phone">Phone Number <span style="font-weight:400;color:var(--text-muted)">(optional — for future SMS alerts)</span></label>
+                        <input type="tel" id="phone" placeholder="(555) 123-4567" autocomplete="tel">
+                        <p class="help-text">Leave blank to use push notifications only via the free ntfy app</p>
                     </div>
 
                     <!-- Notification Preferences -->
@@ -592,15 +592,15 @@
                         </div>
                     </div>
 
-                    <!-- SMS Consent Checkbox (required for Twilio A2P compliance) -->
-                    <div class="consent-box">
+                    <!-- SMS Consent (only shown when phone is entered) -->
+                    <div class="consent-box" id="sms-consent-box" style="display:none">
                         <div class="checkbox-group">
-                            <input type="checkbox" id="sms-consent" required>
+                            <input type="checkbox" id="sms-consent">
                             <label for="sms-consent">
-                                I agree to receive SMS train delay alerts from <strong>NJ Transit Delay Alerts</strong>. 
-                                Message frequency varies based on train delays. Message &amp; data rates may apply. 
-                                Reply <strong>STOP</strong> to unsubscribe, <strong>HELP</strong> for help. 
-                                <a href="privacy.html" target="_blank">Privacy Policy</a> · 
+                                I agree to receive SMS train delay alerts from <strong>NJ Transit Delay Alerts</strong>.
+                                Message frequency varies based on train delays. Message &amp; data rates may apply.
+                                Reply <strong>STOP</strong> to unsubscribe, <strong>HELP</strong> for help.
+                                <a href="privacy.html" target="_blank">Privacy Policy</a> ·
                                 <a href="terms.html" target="_blank">Terms</a>
                             </label>
                         </div>
@@ -622,6 +622,23 @@
                     </div>
                 </div>
 
+                <!-- ntfy setup box: shown immediately after subscribe (no phone) -->
+                <div class="verification-box" id="ntfy-setup-box" style="display:none">
+                    <div class="success-icon">✅</div>
+                    <h3>You're subscribed! Set up push notifications</h3>
+                    <p>Install the free <strong>ntfy</strong> app, then subscribe to your personal topic to receive train alerts on your phone.</p>
+                    <div style="margin:1rem 0;text-align:center">
+                        <img id="ntfy-qr" src="" alt="QR code" style="width:160px;height:160px;border-radius:8px;border:2px solid var(--border)">
+                        <p style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted)">Scan with the ntfy app to subscribe instantly</p>
+                    </div>
+                    <div style="background:var(--surface);border-radius:8px;padding:0.75rem;margin:0.5rem 0;word-break:break-all;font-family:monospace;font-size:0.85rem" id="ntfy-topic-display"></div>
+                    <p style="font-size:0.8rem;color:var(--text-muted)">
+                        📱 <a href="https://ntfy.sh" target="_blank">ntfy.sh</a> is a free push notification service — no account needed.<br>
+                        🔒 Keep your topic link private — it's your personal notification channel.
+                    </p>
+                    <a id="ntfy-manage-link" href="#" class="btn btn-primary" style="display:inline-block;margin-top:0.5rem;text-decoration:none">Manage / Unsubscribe →</a>
+                </div>
+
                 <div class="success-message" id="success-message">
                     <div class="success-icon">✅</div>
                     <h2>You're All Set!</h2>
@@ -631,8 +648,20 @@
                         <p><strong>Line:</strong> <span id="success-line"></span></p>
                         <p><strong>Morning Train:</strong> <span id="success-morning"></span></p>
                         <p><strong>Evening Train:</strong> <span id="success-evening"></span></p>
-                        <p><strong>Phone:</strong> <span id="success-phone"></span></p>
                     </div>
+                    <div id="success-ntfy-box" style="margin-top:1rem;background:var(--surface);border-radius:8px;padding:1rem;display:none">
+                        <p style="font-weight:600;margin-bottom:0.5rem">📡 Your ntfy topic:</p>
+                        <div style="font-family:monospace;font-size:0.85rem;word-break:break-all" id="success-ntfy-topic"></div>
+                        <a id="success-manage-link" href="#" style="font-size:0.85rem;color:var(--accent2)">Manage subscription →</a>
+                    </div>
+                </div>
+
+                <!-- Manage / Unsubscribe page (shown when ?topic= in URL) -->
+                <div id="manage-section" style="display:none">
+                    <h3>⚙️ Manage Subscription</h3>
+                    <div id="manage-details" style="margin:1rem 0"></div>
+                    <button class="btn btn-primary" onclick="confirmUnsubscribeByTopic()" style="background:var(--error,#e53e3e)">Unsubscribe</button>
+                    <p id="manage-msg" style="margin-top:0.75rem;font-size:0.9rem"></p>
                 </div>
 
                 <!-- Disclaimer -->
@@ -866,9 +895,57 @@
             document.getElementById(tabName + '-tab').classList.add('active');
         }
 
+        // Show/hide SMS consent box based on whether phone is entered
+        document.getElementById('phone').addEventListener('input', function() {
+            const hasPhone = this.value.trim().length > 0;
+            document.getElementById('sms-consent-box').style.display = hasPhone ? '' : 'none';
+        });
+
+        // Handle manage page if ?topic= is in URL
+        (function() {
+            const params = new URLSearchParams(window.location.search);
+            const topic = params.get('topic');
+            if (!topic) return;
+            // Hide subscribe form, show manage section
+            document.getElementById('subscribe-form').style.display = 'none';
+            const manageEl = document.getElementById('manage-section');
+            manageEl.style.display = '';
+            fetch(`${API_BASE}/manage/${topic}`)
+                .then(r => r.ok ? r.json() : Promise.reject())
+                .then(sub => {
+                    document.getElementById('manage-details').innerHTML = `
+                        <p><strong>Morning Train:</strong> ${sub.morning_train}</p>
+                        <p><strong>Evening Train:</strong> ${sub.evening_train}</p>
+                        <p><strong>Station:</strong> ${sub.station || '—'}</p>
+                        <p><strong>ntfy Topic:</strong> <span style="font-family:monospace;font-size:0.85rem">${sub.ntfy_topic}</span></p>`;
+                    window._manageTopic = topic;
+                })
+                .catch(() => {
+                    document.getElementById('manage-details').textContent = 'Subscription not found.';
+                });
+        })();
+
+        async function confirmUnsubscribeByTopic() {
+            if (!window._manageTopic) return;
+            if (!confirm('Are you sure you want to unsubscribe?')) return;
+            const res = await fetch(`${API_BASE}/unsubscribe/topic`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ topic: window._manageTopic })
+            });
+            const msg = document.getElementById('manage-msg');
+            if (res.ok) {
+                msg.textContent = "✅ You've been unsubscribed. You can close this page.";
+                document.querySelector('#manage-section button').style.display = 'none';
+            } else {
+                msg.textContent = '❌ Something went wrong. Please try again.';
+            }
+        }
+
         // Store subscribe payload for resend
         let subscribePayload = null;
         let subscribePhone = '';
+        let subscribeNtfyTopic = '';
 
         // Subscribe form submission
         document.getElementById('subscribe-form').addEventListener('submit', async function(e) {
@@ -902,8 +979,28 @@
             const digits = phone.replace(/\D/g, '');
             subscribePhone = '+1' + digits;
 
+            // Phone is optional — only require consent when phone is given
+            const hasPhone = phone.trim().length > 0;
+            if (hasPhone) {
+                const digits = phone.replace(/\D/g, '');
+                if (digits.length !== 10) {
+                    errorEl.textContent = 'Please enter a valid 10-digit phone number, or leave blank.';
+                    errorEl.classList.add('show');
+                    return;
+                }
+                const consentChecked = document.getElementById('sms-consent').checked;
+                if (!consentChecked) {
+                    errorEl.textContent = 'Please accept the SMS consent to receive text alerts.';
+                    errorEl.classList.add('show');
+                    return;
+                }
+                subscribePhone = '+1' + digits;
+            } else {
+                subscribePhone = '';
+            }
+
             subscribePayload = {
-                phone: subscribePhone,
+                phone: subscribePhone || null,
                 morning_train: morningTrain,
                 evening_train: eveningTrain,
                 delay_alerts: delayAlerts,
@@ -915,13 +1012,14 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'Sending...';
 
+            let data;
             try {
                 const res = await fetch(`${API_BASE}/subscribe`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify(subscribePayload)
                 });
-                const data = await res.json();
+                data = await res.json();
                 if (!res.ok) {
                     errorEl.textContent = data.detail || 'Subscription failed. Please try again.';
                     errorEl.classList.add('show');
@@ -937,12 +1035,24 @@
                 return;
             }
 
-            // Success — show verification box
+            subscribeNtfyTopic = data.ntfy_topic || '';
+            const manageUrl = data.manage_url || '';
             document.getElementById('subscribe-form').style.display = 'none';
-            document.getElementById('verification-box').classList.add('show');
-            startResendCountdown('resend-btn');
             submitBtn.disabled = false;
             submitBtn.textContent = 'Subscribe';
+
+            if (data.status === 'pending') {
+                // Phone flow — show verification box
+                document.getElementById('verification-box').classList.add('show');
+                startResendCountdown('resend-btn');
+            } else {
+                // No-phone flow — show ntfy setup box immediately
+                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://ntfy.sh/${subscribeNtfyTopic}`;
+                document.getElementById('ntfy-qr').src = qrUrl;
+                document.getElementById('ntfy-topic-display').textContent = `ntfy.sh/${subscribeNtfyTopic}`;
+                document.getElementById('ntfy-manage-link').href = manageUrl;
+                document.getElementById('ntfy-setup-box').style.display = '';
+            }
 
             // Store for success message
             sessionStorage.setItem('subscription', JSON.stringify({
@@ -950,7 +1060,9 @@
                 line: lineName,
                 morning: document.getElementById('morning-train').selectedOptions[0].textContent,
                 evening: document.getElementById('evening-train').selectedOptions[0].textContent,
-                phone: phone
+                phone: subscribePhone,
+                ntfy_topic: subscribeNtfyTopic,
+                manage_url: manageUrl
             }));
         });
 
@@ -1058,7 +1170,13 @@
             document.getElementById('success-line').textContent = sub.line;
             document.getElementById('success-morning').textContent = sub.morning;
             document.getElementById('success-evening').textContent = sub.evening;
-            document.getElementById('success-phone').textContent = sub.phone;
+
+            // Show ntfy topic if available
+            if (sub.ntfy_topic) {
+                document.getElementById('success-ntfy-box').style.display = '';
+                document.getElementById('success-ntfy-topic').textContent = `ntfy.sh/${sub.ntfy_topic}`;
+                document.getElementById('success-manage-link').href = sub.manage_url || '#';
+            }
         }
 
         // Store phone across unsubscribe steps

@@ -759,7 +759,7 @@ let state = {
   line: null, lineName: null,
   station: null, stationName: null,
   morningTrain: null, eveningTrain: null,
-  phone: null, allInbound: [],
+  phone: null, ntfy_topic: null, allInbound: [],
   unsubPhone: null,
   weather: null,
   timeOfDay: null
@@ -996,11 +996,23 @@ function showTrainCards(trains, type){
       } else {
         state.eveningTrain = train;
         history.push({role:'user', content:`I selected Train ${train.id} at ${train.time} as my evening train.`});
-        const resp = await callNova(`I selected Train ${train.id} at ${train.time} as my evening train. Now ask for my phone number.`);
+        const resp = await callNova(`I selected Train ${train.id} at ${train.time} as my evening train. Briefly ask how they'd like to receive alerts — free push notifications via ntfy app (no phone needed) or SMS text alerts.`);
         const parsed = parseNovaResponse(resp);
         await novaSay(parsed.clean);
-        state.step = 'phone';
-        document.getElementById('userInput').placeholder = 'Your 10-digit phone number';
+        state.step = 'alert_method';
+        showChips([
+          {name: '🔔 Push notifications (free, no phone)', code: 'ntfy'},
+          {name: '📱 SMS text alerts', code: 'sms'}
+        ], async opt => {
+          addMessage('user', opt.name);
+          if (opt.code === 'ntfy') {
+            await continueAfterConsent();
+          } else {
+            await novaSay("Got it! What's your 10-digit phone number?");
+            state.step = 'phone';
+            document.getElementById('userInput').placeholder = 'Your 10-digit phone number';
+          }
+        });
       }
     };
     wrapper.appendChild(card);
@@ -1152,7 +1164,7 @@ async function continueAfterConsent(){
     <div class="summary-row"><span class="summary-label">STATION</span><span class="summary-value">${state.stationName}</span></div>
     <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value">Train ${state.morningTrain?.id} · ${state.morningTrain?.time}</span></div>
     <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value">Train ${state.eveningTrain?.id} · ${state.eveningTrain?.time}</span></div>
-    <div class="summary-row"><span class="summary-label">PHONE</span><span class="summary-value">${state.phone}</span></div>`;
+    ${state.phone ? `<div class="summary-row"><span class="summary-label">PHONE</span><span class="summary-value">${state.phone}</span></div>` : `<div class="summary-row"><span class="summary-label">ALERTS</span><span class="summary-value">🔔 Push notifications (ntfy)</span></div>`}`;
   const resp = await callNova("Show the user a summary and ask them to confirm their subscription.");
   const parsed = parseNovaResponse(resp);
   await novaSay(parsed.clean, summary);
@@ -1180,19 +1192,59 @@ async function continueAfterConsent(){
 async function doSubscribe(){
   showTyping();
   try{
-    const e164='+1'+state.phone.replace(/\D/g,'');
-    const res=await fetch(`${API_BASE}/subscribe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:e164,morning_train:state.morningTrain.id,evening_train:state.eveningTrain.id,delay_alerts:true,ontime_alerts:true})});
+    const body = {
+      morning_train: state.morningTrain.id,
+      evening_train: state.eveningTrain.id,
+      delay_alerts: true,
+      ontime_alerts: true,
+      station: state.station || ''
+    };
+    if (state.phone) body.phone = '+1' + state.phone.replace(/\D/g, '');
+    const res=await fetch(`${API_BASE}/subscribe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     removeTyping();
     if(res.ok){
-      const resp = await callNova("Subscription request sent! Tell user to check their phone for a 6-digit verification code. Be enthusiastic but brief.");
-      await novaSay(parseNovaResponse(resp).clean);
-      state.step='verify';
-      document.getElementById('userInput').placeholder='Enter 6-digit code (or 000000 to test)';
+      const data = await res.json();
+      state.ntfy_topic = data.ntfy_topic || '';
+      if (data.status === 'active') {
+        // No phone — directly active, show ntfy setup
+        await showNtfySuccess();
+      } else {
+        // Phone provided — needs verification
+        const resp = await callNova("Subscription request sent! Tell user to check their phone for a 6-digit verification code. Be enthusiastic but brief.");
+        await novaSay(parseNovaResponse(resp).clean);
+        state.step='verify';
+        document.getElementById('userInput').placeholder='Enter 6-digit code (or 000000 to test)';
+      }
     } else {
       const d=await res.json();
       await novaSay(`Hmm, something went sideways: ${d.detail}. Want to try again?`);
     }
   }catch(e){ removeTyping(); await novaSay("Network trouble! Try again in a sec 🔄"); }
+}
+
+async function showNtfySuccess(){
+  state.step = 'post';
+  const topic = state.ntfy_topic || '';
+  const manageUrl = `https://black-plant-0162ad510.4.azurestaticapps.net/?topic=${topic}`;
+  const qrUrl = topic ? `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent('https://ntfy.sh/' + topic)}` : '';
+  const ntfyCard = document.createElement('div');
+  ntfyCard.className = 'summary-card';
+  ntfyCard.innerHTML = `
+    <div class="summary-header">🔔 YOUR PUSH ALERT TOPIC</div>
+    ${qrUrl ? `<div style="text-align:center;margin:0.5rem 0"><img src="${qrUrl}" alt="QR code" style="border-radius:8px"></div>` : ''}
+    <div style="font-family:monospace;font-size:0.8rem;background:rgba(0,0,0,0.3);padding:0.4rem 0.75rem;border-radius:6px;word-break:break-all;margin:0.5rem 0">${topic}</div>
+    <div style="font-size:0.75rem;opacity:0.85">1. Install the <strong>ntfy</strong> app &nbsp;·&nbsp; 2. Subscribe to the topic above or scan the QR &nbsp;·&nbsp; 3. Keep this topic private!</div>
+    <a href="${manageUrl}" target="_blank" style="display:block;margin-top:0.5rem;color:var(--accent2);font-size:0.8rem">⚙️ Manage subscription →</a>`;
+  const resp = await callNova("User is subscribed via push notifications (ntfy app)! Give a short enthusiastic message. Tell them to install the ntfy app and subscribe to their personal topic to start receiving alerts.");
+  await novaSay(parseNovaResponse(resp).clean, ntfyCard);
+  await delay(400);
+  showChips([
+    {name:'📋 View subscription', code:'status'},
+    {name:'🔄 Set up another', code:'restart'},
+    {name:'🌐 Open main app', code:'mainapp'},
+    {name:'❓ How do alerts work?', code:'howto'}
+  ], handlePostChip);
+  document.getElementById('userInput').placeholder = 'Ask Ramiya anything...';
 }
 
 async function handleVerify(text){
@@ -1213,8 +1265,25 @@ async function handleVerify(text){
         <div class="stat-box"><div class="stat-num">5min</div><div class="stat-label">Check Interval</div></div>
         <div class="stat-box"><div class="stat-num">24/7</div><div class="stat-label">Monitoring</div></div>
         <div class="stat-box"><div class="stat-num">∞</div><div class="stat-label">Patience Needed</div></div>`;
-      const resp = await callNova("User is now successfully subscribed! Give a fun congratulations message. Keep it short and witty. Maybe joke about NJ Transit delays.");
+      const resp = await callNova("User is now successfully subscribed via SMS! Give a fun congratulations message. Keep it short and witty. Maybe joke about NJ Transit delays.");
       await novaSay(parseNovaResponse(resp).clean, statsEl);
+      // Also show ntfy push notification topic
+      if (state.ntfy_topic) {
+        const topic = state.ntfy_topic;
+        const manageUrl = `https://black-plant-0162ad510.4.azurestaticapps.net/?topic=${topic}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent('https://ntfy.sh/' + topic)}`;
+        const ntfyEl = document.createElement('div');
+        ntfyEl.className = 'summary-card';
+        ntfyEl.style.marginTop = '0.5rem';
+        ntfyEl.innerHTML = `
+          <div class="summary-header">🔔 ALSO GET PUSH NOTIFICATIONS</div>
+          <div style="text-align:center;margin:0.4rem 0"><img src="${qrUrl}" alt="QR code" style="border-radius:8px"></div>
+          <div style="font-family:monospace;font-size:0.75rem;background:rgba(0,0,0,0.3);padding:0.3rem 0.5rem;border-radius:6px;word-break:break-all;margin:0.4rem 0">${topic}</div>
+          <div style="font-size:0.75rem;opacity:0.85">Install <strong>ntfy</strong> app + subscribe to this topic for push alerts too!</div>
+          <a href="${manageUrl}" target="_blank" style="display:block;margin-top:0.4rem;color:var(--accent2);font-size:0.8rem">⚙️ Manage →</a>`;
+        chat.appendChild(ntfyEl);
+        chat.scrollTop = chat.scrollHeight;
+      }
       await delay(400);
       showChips([
         {name:'📋 View my subscription', code:'status'},
@@ -1222,7 +1291,7 @@ async function handleVerify(text){
         {name:'🌐 Open main app', code:'mainapp'},
         {name:'❓ How do alerts work?', code:'howto'}
       ], handlePostChip);
-      document.getElementById('userInput').placeholder='Ask Nova anything...';
+      document.getElementById('userInput').placeholder='Ask Ramiya anything...';
     } else {
       await novaSay("That code didn't match. Double-check or use 000000 in test mode!");
     }
@@ -1417,7 +1486,7 @@ async function selectStation(opt){
 }
 
 function resetState(){
-  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, phone:null, allInbound:[], allTrainsData:null, unsubPhone:null};
+  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, phone:null, ntfy_topic:null, allInbound:[], allTrainsData:null, unsubPhone:null};
   history = [];
 }
 
@@ -1435,7 +1504,8 @@ function getStepBack(step){
     'morning_train': 'morning_time',
     'evening_time': 'morning_train',
     'evening_train': 'evening_time',
-    'phone': 'evening_train',
+    'alert_method': 'evening_train',
+    'phone': 'alert_method',
     'consent': 'phone',
     'confirm': 'phone',
     'verify': 'phone',
@@ -1504,7 +1574,7 @@ async function sendMessage(){
   addMessage('user', text);
 
   // Check for back/restart intent first — works from any step
-  const backSteps = ['line','station','morning_time','morning_train','evening_time','evening_train','phone','consent','confirm','verify'];
+  const backSteps = ['line','station','morning_time','morning_train','evening_time','evening_train','alert_method','phone','consent','confirm','verify'];
   if(isGoingBack(text) && backSteps.includes(state.step)){
     await goBack();
     return;
@@ -1521,7 +1591,7 @@ async function sendMessage(){
     await novaSay("Tap one of the train cards above to pick your evening train! 👆");
     return;
   }
-  if(state.step==='confirm' || state.step==='unsub_confirm'){
+  if(state.step==='confirm' || state.step==='unsub_confirm' || state.step==='alert_method'){
     await novaSay("Tap one of the buttons above to confirm! 👆");
     return;
   }
