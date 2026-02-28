@@ -866,10 +866,14 @@
             document.getElementById(tabName + '-tab').classList.add('active');
         }
 
+        // Store subscribe payload for resend
+        let subscribePayload = null;
+        let subscribePhone = '';
+
         // Subscribe form submission
         document.getElementById('subscribe-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-            
+
             const stationCode = document.getElementById('home-station').value;
             const stationName = document.getElementById('home-station').selectedOptions[0].dataset.name;
             const lineCode = document.getElementById('train-line').value;
@@ -879,7 +883,7 @@
             const phone = document.getElementById('phone').value;
             const delayAlerts = document.getElementById('delay-alerts').checked;
             const ontimeAlerts = document.getElementById('ontime-alerts').checked;
-            
+
             const errorEl = document.getElementById('subscribe-error');
             if (!stationCode || !lineCode || !morningTrain || !eveningTrain || !phone) {
                 let missing = [];
@@ -894,14 +898,51 @@
             }
             errorEl.classList.remove('show');
 
-            // Hide form, show verification
+            // Format phone as E.164
+            const digits = phone.replace(/\D/g, '');
+            subscribePhone = '+1' + digits;
+
+            subscribePayload = {
+                phone: subscribePhone,
+                morning_train: morningTrain,
+                evening_train: eveningTrain,
+                delay_alerts: delayAlerts,
+                ontime_alerts: ontimeAlerts
+            };
+
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+
+            try {
+                const res = await fetch(`${API_BASE}/subscribe`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(subscribePayload)
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    errorEl.textContent = data.detail || 'Subscription failed. Please try again.';
+                    errorEl.classList.add('show');
+                    submitBtn.disabled = false;
+                    submitBtn.textContent = 'Subscribe';
+                    return;
+                }
+            } catch (err) {
+                errorEl.textContent = 'Network error. Please try again.';
+                errorEl.classList.add('show');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Subscribe';
+                return;
+            }
+
+            // Success — show verification box
             document.getElementById('subscribe-form').style.display = 'none';
             document.getElementById('verification-box').classList.add('show');
             startResendCountdown('resend-btn');
-            
-            // In real app: Send API request to backend
-            console.log('Subscribe request:', { stationCode, lineCode, morningTrain, eveningTrain, phone, delayAlerts, ontimeAlerts });
-            
+            submitBtn.disabled = false;
+            submitBtn.textContent = 'Subscribe';
+
             // Store for success message
             sessionStorage.setItem('subscription', JSON.stringify({
                 station: stationName,
@@ -951,11 +992,18 @@
                 }
             }, 1000);
         }
-        function resendCode() {
+        async function resendCode() {
             document.getElementById('verification-code').value = '';
             startResendCountdown('resend-btn');
-            // Re-trigger subscribe API call here if wired up
-            console.log('Resend code requested');
+            if (subscribePayload) {
+                try {
+                    await fetch(`${API_BASE}/subscribe`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(subscribePayload)
+                    });
+                } catch (e) { console.error('Resend failed:', e); }
+            }
         }
         async function resendUnsubCode() {
             document.getElementById('unsubscribe-code').value = '';
@@ -970,7 +1018,7 @@
         }
 
         // Verification
-        function verifyCode() {
+        async function verifyCode() {
             const code = document.getElementById('verification-code').value.replace(/\D/g,'');
             const errorEl = document.getElementById('verify-error');
 
@@ -981,7 +1029,25 @@
             }
             errorEl.classList.remove('show');
 
-            // Hide verification, show success
+            try {
+                const res = await fetch(`${API_BASE}/verify`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: subscribePhone, code: code })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    errorEl.textContent = data.detail || 'Invalid code. Please try again.';
+                    errorEl.classList.add('show');
+                    return;
+                }
+            } catch (err) {
+                errorEl.textContent = 'Network error. Please try again.';
+                errorEl.classList.add('show');
+                return;
+            }
+
+            // Success — show confirmation
             document.getElementById('verification-box').classList.remove('show');
             document.getElementById('success-message').classList.add('show');
 
