@@ -759,7 +759,7 @@ let state = {
   line: null, lineName: null,
   station: null, stationName: null,
   morningTrain: null, eveningTrain: null,
-  phone: null, ntfy_topic: null, allInbound: [],
+  phone: null, ntfy_topic: null, schedule: 'weekday', allInbound: [],
   unsubPhone: null,
   weather: null,
   timeOfDay: null
@@ -962,7 +962,8 @@ function parseTrainMinutes(t){
 
 async function loadAllTrains(){
   if(state.allTrainsData) return state.allTrainsData;
-  const res = await fetch(`${API_BASE}/trains/${state.station}`);
+  const schedule = state.schedule || 'weekday';
+  const res = await fetch(`${API_BASE}/trains/${state.station}?schedule=${schedule}`);
   const data = await res.json();
   state.allTrainsData = data;
   state.allInbound = data.inbound||[];
@@ -1162,6 +1163,7 @@ async function continueAfterConsent(){
     <div class="summary-header">✦ YOUR ALERT SETUP</div>
     <div class="summary-row"><span class="summary-label">LINE</span><span class="summary-value">${state.lineName}</span></div>
     <div class="summary-row"><span class="summary-label">STATION</span><span class="summary-value">${state.stationName}</span></div>
+    <div class="summary-row"><span class="summary-label">SCHEDULE</span><span class="summary-value">${state.schedule==='saturday'?'🏖️ Saturday':state.schedule==='sunday'?'🌅 Sunday & Holidays':'📅 Weekday'}</span></div>
     <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value">Train ${state.morningTrain?.id} · ${state.morningTrain?.time}</span></div>
     <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value">Train ${state.eveningTrain?.id} · ${state.eveningTrain?.time}</span></div>
     ${state.phone ? `<div class="summary-row"><span class="summary-label">PHONE</span><span class="summary-value">${state.phone}</span></div>` : `<div class="summary-row"><span class="summary-label">ALERTS</span><span class="summary-value">🔔 Push notifications (ntfy)</span></div>`}`;
@@ -1478,7 +1480,23 @@ async function selectStation(opt){
   state.station=opt.code; state.stationName=opt.name;
   addMessage('user', opt.name);
   history.push({role:'user', content:`I board from ${opt.name} [STATION:${opt.code}]`});
-  const resp = await callNova(`User boards from ${opt.name}. Ask what time they usually leave for NYC in the morning.`);
+  const resp = await callNova(`User boards from ${opt.name}. Briefly ask which schedule they want alerts for — weekday, Saturday, or Sunday/holiday. They can set up weekend alerts in advance!`);
+  const parsed = parseNovaResponse(resp);
+  await novaSay(parsed.clean);
+  state.step='schedule';
+  showChips([
+    {name:'📅 Weekday', code:'weekday'},
+    {name:'🏖️ Saturday', code:'saturday'},
+    {name:'🌅 Sunday & Holidays', code:'sunday'}
+  ], selectSchedule);
+}
+
+async function selectSchedule(opt){
+  state.schedule = opt.code;
+  state.allTrainsData = null; // clear cache so trains re-fetch for new schedule
+  addMessage('user', opt.name);
+  history.push({role:'user', content:`I want to set up ${opt.name} alerts.`});
+  const resp = await callNova(`User wants ${opt.name} schedule alerts. Now ask what time they usually leave for NYC in the morning.`);
   const parsed = parseNovaResponse(resp);
   await novaSay(parsed.clean);
   state.step='morning_time';
@@ -1486,7 +1504,7 @@ async function selectStation(opt){
 }
 
 function resetState(){
-  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, phone:null, ntfy_topic:null, allInbound:[], allTrainsData:null, unsubPhone:null};
+  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, phone:null, ntfy_topic:null, schedule:'weekday', allInbound:[], allTrainsData:null, unsubPhone:null};
   history = [];
 }
 
@@ -1500,7 +1518,8 @@ function isGoingBack(text){
 function getStepBack(step){
   const backMap = {
     'station': 'line',
-    'morning_time': 'station',
+    'schedule': 'station',
+    'morning_time': 'schedule',
     'morning_train': 'morning_time',
     'evening_time': 'morning_train',
     'evening_train': 'evening_time',
@@ -1574,7 +1593,7 @@ async function sendMessage(){
   addMessage('user', text);
 
   // Check for back/restart intent first — works from any step
-  const backSteps = ['line','station','morning_time','morning_train','evening_time','evening_train','alert_method','phone','consent','confirm','verify'];
+  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','alert_method','phone','consent','confirm','verify'];
   if(isGoingBack(text) && backSteps.includes(state.step)){
     await goBack();
     return;
@@ -1591,7 +1610,7 @@ async function sendMessage(){
     await novaSay("Tap one of the train cards above to pick your evening train! 👆");
     return;
   }
-  if(state.step==='confirm' || state.step==='unsub_confirm' || state.step==='alert_method'){
+  if(state.step==='confirm' || state.step==='unsub_confirm' || state.step==='alert_method' || state.step==='schedule'){
     await novaSay("Tap one of the buttons above to confirm! 👆");
     return;
   }

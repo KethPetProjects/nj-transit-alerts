@@ -423,6 +423,29 @@
         }
 
 
+        .schedule-btn {
+            flex: 1;
+            padding: 0.5rem 0.25rem;
+            border: 2px solid var(--border);
+            border-radius: 8px;
+            background: var(--white);
+            color: var(--text-light);
+            font-family: 'Outfit', sans-serif;
+            font-size: 0.8rem;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.15s;
+        }
+        .schedule-btn.active {
+            border-color: var(--primary);
+            background: var(--primary);
+            color: white;
+        }
+        .schedule-btn:not(.active):hover {
+            border-color: var(--primary);
+            color: var(--primary);
+        }
+
         .consent-box {
             background: #FFF8E1;
             border: 1px solid #FFE082;
@@ -557,6 +580,17 @@
                             <option value="">Select your line first...</option>
                         </select>
                         <p class="help-text">The station you commute from</p>
+                    </div>
+
+                    <!-- Schedule Type -->
+                    <div class="form-group" id="schedule-group" style="display:none">
+                        <label>Schedule Type <span class="required">*</span></label>
+                        <div style="display:flex;gap:0.5rem;margin-top:0.25rem" id="schedule-toggle">
+                            <button type="button" class="schedule-btn active" data-schedule="weekday">📅 Weekday</button>
+                            <button type="button" class="schedule-btn" data-schedule="saturday">🏖️ Saturday</button>
+                            <button type="button" class="schedule-btn" data-schedule="sunday">🌅 Sunday & Holidays</button>
+                        </div>
+                        <p class="help-text">Pick the schedule you want alerts for — set up weekend trains on a Friday!</p>
                     </div>
 
                     <!-- Train to NYC -->
@@ -784,6 +818,7 @@
                 stationSelect.innerHTML = '<option value="">Select your line first...</option>';
                 document.getElementById('morning-train').disabled = true;
                 document.getElementById('evening-train').disabled = true;
+                document.getElementById('schedule-group').style.display = 'none';
             }
         });
 
@@ -800,19 +835,49 @@
             }
         });
 
-        async function loadTrains(stationCode, lineCode) {
+        // Default schedule based on today's day
+        function getTodaySchedule() {
+            const d = new Date().getDay(); // 0=Sun, 6=Sat
+            if (d === 6) return 'saturday';
+            if (d === 0) return 'sunday';
+            return 'weekday';
+        }
+
+        // Track selected schedule globally so toggle can re-fetch
+        let _currentStation = null, _currentLine = null;
+        let _selectedSchedule = getTodaySchedule();
+
+        // Set the correct active button on load
+        document.querySelectorAll('.schedule-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.schedule === _selectedSchedule);
+            btn.addEventListener('click', async () => {
+                _selectedSchedule = btn.dataset.schedule;
+                document.querySelectorAll('.schedule-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if (_currentStation) await loadTrains(_currentStation, _currentLine, _selectedSchedule);
+            });
+        });
+
+        async function loadTrains(stationCode, lineCode, schedule) {
+            _currentStation = stationCode;
+            _currentLine = lineCode;
+            if (!schedule) schedule = _selectedSchedule;
+
             const morningSelect = document.getElementById('morning-train');
             const eveningSelect = document.getElementById('evening-train');
-            
+
             morningSelect.disabled = false;
             eveningSelect.disabled = false;
-            
+
             morningSelect.innerHTML = '<option value="">Loading trains...</option>';
             eveningSelect.innerHTML = '<option value="">Loading trains...</option>';
-            
+
+            // Show schedule selector now that a station is chosen
+            document.getElementById('schedule-group').style.display = '';
+
             try {
                 // Fetch REAL trains from backend API
-                const response = await fetch(`${API_BASE}/trains/${stationCode}`);
+                const response = await fetch(`${API_BASE}/trains/${stationCode}?schedule=${schedule}`);
                 
                 if (!response.ok) {
                     throw new Error('Failed to fetch trains');
