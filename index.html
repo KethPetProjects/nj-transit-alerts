@@ -1302,7 +1302,7 @@
                 const response = await fetch(`${API_BASE}/unsubscribe/request`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: phone.replace(/\D/g, '') })
+                    body: JSON.stringify({ phone: '+1' + phone.replace(/\D/g, '').slice(-10) })
                 });
 
                 if (!response.ok) {
