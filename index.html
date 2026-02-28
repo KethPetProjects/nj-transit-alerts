@@ -696,9 +696,77 @@
                     </div>
 
                     <!-- Open in ntfy app deep link -->
-                    <a id="ntfy-open-btn" href="#" class="btn btn-primary" style="display:block;text-decoration:none;margin-bottom:0.5rem">📱 Open in ntfy app →</a>
+                    <a id="ntfy-open-btn" href="#" class="btn btn-primary" style="display:block;text-decoration:none;margin-bottom:0.75rem">📱 Open in ntfy app →</a>
 
-                    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.5rem">
+                    <!-- Collapsible setup guide -->
+                    <div id="ntfy-help-toggle" onclick="toggleNtfyHelp()"
+                         style="cursor:pointer;display:flex;align-items:center;justify-content:space-between;padding:0.6rem 0.9rem;background:var(--surface);border:1px solid var(--border);border-radius:8px;font-size:0.9rem;margin-bottom:0.5rem;user-select:none">
+                        <span>🤔 Need help setting up ntfy?</span>
+                        <span id="ntfy-help-arrow" style="transition:transform 0.2s;font-size:0.75rem;color:var(--text-muted)">▼</span>
+                    </div>
+                    <div id="ntfy-help-panel" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:1rem;margin-bottom:0.75rem;text-align:left;font-size:0.88rem">
+                        <!-- Platform tabs -->
+                        <div style="display:flex;gap:0.5rem;margin-bottom:1rem">
+                            <button onclick="switchNtfyTab('ios')" id="ntfy-tab-ios"
+                                    style="flex:1;padding:0.4rem;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-size:0.82rem;background:var(--accent);color:#fff;font-weight:600"> iPhone (iOS)</button>
+                            <button onclick="switchNtfyTab('android')" id="ntfy-tab-android"
+                                    style="flex:1;padding:0.4rem;border-radius:6px;border:1px solid var(--border);cursor:pointer;font-size:0.82rem;background:var(--surface);color:var(--text)"> Android</button>
+                        </div>
+
+                        <!-- iOS steps -->
+                        <div id="ntfy-steps-ios">
+                            <div style="display:flex;flex-direction:column;gap:0.75rem">
+                                <div style="display:flex;gap:0.75rem;align-items:flex-start">
+                                    <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">1</span>
+                                    <div><strong>Install ntfy</strong> — <a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank">Download from App Store</a></div>
+                                </div>
+                                <div style="display:flex;gap:0.75rem;align-items:flex-start">
+                                    <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">2</span>
+                                    <div>Open ntfy → tap the <strong>+ button</strong> (top right)</div>
+                                </div>
+                                <div style="display:flex;gap:0.75rem;align-items:flex-start">
+                                    <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">3</span>
+                                    <div>In the <em>Topic name</em> field, paste your topic (tap the box above to copy it). Leave the server as <strong>ntfy.sh</strong></div>
+                                </div>
+                                <div style="display:flex;gap:0.75rem;align-items:flex-start">
+                                    <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">4</span>
+                                    <div>Tap <strong>Subscribe</strong> — done! Alerts will appear as push notifications 🎉</div>
+                                </div>
+                                <div style="display:flex;gap:0.75rem;align-items:flex-start">
+                                    <span style="background:#4caf50;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">💡</span>
+                                    <div><em>Shortcut:</em> Tap <strong>Open in ntfy app →</strong> above — it skips steps 2 & 3 automatically</div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Android steps -->
+                        <div id="ntfy-steps-android" style="display:none">
+                            <div style="display:flex;flex-direction:column;gap:0.75rem">
+                                <div style="display:flex;gap:0.75rem;align-items:flex-start">
+                                    <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">1</span>
+                                    <div><strong>Install ntfy</strong> — <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank">Download from Play Store</a></div>
+                                </div>
+                                <div style="display:flex;gap:0.75rem;align-items:flex-start">
+                                    <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">2</span>
+                                    <div>Open ntfy → tap the <strong>+ button</strong> (bottom right)</div>
+                                </div>
+                                <div style="display:flex;gap:0.75rem;align-items:flex-start">
+                                    <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">3</span>
+                                    <div>In the <em>Topic name</em> field, paste your topic (tap the box above to copy it). Server should stay <strong>ntfy.sh</strong></div>
+                                </div>
+                                <div style="display:flex;gap:0.75rem;align-items:flex-start">
+                                    <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">4</span>
+                                    <div>Tap <strong>Subscribe</strong> — done! You'll get alerts as push notifications 🎉</div>
+                                </div>
+                                <div style="display:flex;gap:0.75rem;align-items:flex-start">
+                                    <span style="background:#4caf50;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">💡</span>
+                                    <div><em>Shortcut:</em> Tap <strong>Open in ntfy app →</strong> above — it pre-fills the topic for you</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p style="font-size:0.8rem;color:var(--text-muted);margin-top:0.25rem">
                         🔒 Keep your topic private — it's your personal alert channel.<br>
                         💡 Share it with family so they get alerts too.
                     </p>
@@ -1030,6 +1098,27 @@
                     document.getElementById('manage-details').textContent = 'Subscription not found.';
                 });
         })();
+
+        function toggleNtfyHelp() {
+            const panel = document.getElementById('ntfy-help-panel');
+            const arrow = document.getElementById('ntfy-help-arrow');
+            const open = panel.style.display === 'none';
+            panel.style.display = open ? 'block' : 'none';
+            arrow.style.transform = open ? 'rotate(180deg)' : '';
+        }
+
+        function switchNtfyTab(platform) {
+            document.getElementById('ntfy-steps-ios').style.display = platform === 'ios' ? 'block' : 'none';
+            document.getElementById('ntfy-steps-android').style.display = platform === 'android' ? 'block' : 'none';
+            const accent = 'var(--accent)';
+            const surface = 'var(--surface)';
+            const white = '#fff';
+            const textColor = 'var(--text)';
+            document.getElementById('ntfy-tab-ios').style.background = platform === 'ios' ? accent : surface;
+            document.getElementById('ntfy-tab-ios').style.color = platform === 'ios' ? white : textColor;
+            document.getElementById('ntfy-tab-android').style.background = platform === 'android' ? accent : surface;
+            document.getElementById('ntfy-tab-android').style.color = platform === 'android' ? white : textColor;
+        }
 
         function copyNtfyTopic(el) {
             const topic = document.getElementById('ntfy-topic-text').textContent;
