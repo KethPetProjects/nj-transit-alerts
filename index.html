@@ -480,6 +480,36 @@
             .tab { padding: 0.75rem 1rem; flex: 1; text-align: center; font-size: 1rem; }
         }
 
+        @media (max-width: 600px) {
+            /* Compact header */
+            .header { padding: 0.75rem 1rem 2.5rem 1rem; }
+            .header h1 { font-size: 1.3rem; margin-bottom: 0.2rem; }
+            .header p { font-size: 0.8rem; }
+            .train-icon { font-size: 1.4rem; }
+
+            /* Nova strip — horizontal row, no description */
+            .nova-feature { padding: 0.75rem 1rem; }
+            .nova-feature-inner { gap: 0; }
+            .nova-feature-left {
+                flex-direction: row !important;
+                align-items: center !important;
+                gap: 0.75rem;
+                width: 100%;
+            }
+            .nova-avatar-img { width: 40px !important; height: 40px !important; flex-shrink: 0; }
+            .nova-badge { display: none; }
+            .nova-title { font-size: 1rem !important; margin-bottom: 0; }
+            .nova-desc { display: none; }
+            .nova-cta { padding: 0.5rem 1rem; font-size: 0.8rem; white-space: nowrap; }
+            .nova-feature-text { display: flex; align-items: center; gap: 0.75rem; flex: 1; }
+
+            /* Tighter container + card */
+            .container { margin: -20px auto 16px; }
+            .card { padding: 1rem; }
+            .tabs { gap: 0; }
+            .tab { padding: 0.6rem 0.75rem; }
+        }
+
         /* Inline error messages */
         .error-msg {
             color: var(--primary);
