@@ -640,31 +640,25 @@
                 <div class="verification-box" id="ntfy-setup-box">
                     <div class="success-icon">✅</div>
                     <h3>You're subscribed! One last step.</h3>
-                    <p style="margin-bottom:1rem">To receive alerts, set up the free <strong>ntfy</strong> push notification app:</p>
-                    <ol style="text-align:left;line-height:2;margin:0 0 1rem 1.2rem;font-size:0.95rem">
-                        <li><strong>Install the ntfy app</strong> —
-                            <a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank">App Store</a> or
-                            <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank">Play Store</a>
-                        </li>
-                        <li><strong>Open the app</strong> → tap the <strong>+</strong> button → tap <strong>Scan QR code</strong></li>
-                        <li>Scan the code below — you'll be subscribed to your personal alert channel instantly</li>
-                    </ol>
-                    <div style="margin:1rem 0;text-align:center">
-                        <img id="ntfy-qr" src="" alt="QR code" style="width:160px;height:160px;border-radius:8px;border:2px solid var(--border)">
-                        <p style="margin-top:0.5rem;font-size:0.8rem;color:var(--text-muted)">Scan from another device — or use the options below on this phone</p>
-                    </div>
+                    <p style="margin-bottom:1rem">Install the free <strong>ntfy</strong> app to receive push notifications —
+                        <a href="https://apps.apple.com/app/ntfy/id1625396347" target="_blank">App Store</a> or
+                        <a href="https://play.google.com/store/apps/details?id=io.heckel.ntfy" target="_blank">Play Store</a>
+                    </p>
 
                     <!-- Tap to copy topic -->
-                    <p style="font-size:0.8rem;margin-bottom:0.3rem;color:var(--text-muted)">Your topic name — tap to copy, then paste into ntfy app:</p>
+                    <p style="font-size:0.8rem;margin-bottom:0.3rem;color:var(--text-muted)">Your topic name — tap to copy, then paste into ntfy:</p>
                     <div onclick="copyNtfyTopic(this)"
-                         style="background:var(--surface);border-radius:8px;padding:0.75rem 1rem;margin:0 0 0.5rem;word-break:break-all;font-family:monospace;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;border:1px solid var(--border)"
+                         style="background:var(--surface);border-radius:8px;padding:0.75rem 1rem;margin:0 0 0.75rem;word-break:break-all;font-family:monospace;font-size:0.85rem;cursor:pointer;display:flex;align-items:center;justify-content:space-between;gap:0.5rem;border:1px solid var(--border)"
                          id="ntfy-topic-display">
                         <span id="ntfy-topic-text"></span>
                         <span id="ntfy-copy-label" style="font-family:sans-serif;font-size:0.75rem;white-space:nowrap;color:var(--text-muted)">📋 Tap to copy</span>
                     </div>
 
-                    <!-- Open in ntfy app deep link -->
-                    <a id="ntfy-open-btn" href="#" class="btn btn-primary" style="display:block;text-decoration:none;margin-bottom:0.75rem">📱 Open in ntfy app →</a>
+                    <!-- Action buttons -->
+                    <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
+                        <a id="ntfy-open-btn" href="#" class="btn btn-primary" style="flex:1;text-decoration:none;text-align:center">📱 Open in ntfy app</a>
+                        <button onclick="shareNtfyTopic()" class="btn btn-secondary" style="flex:1" id="ntfy-share-btn">↗ Share topic</button>
+                    </div>
 
                     <!-- Collapsible setup guide -->
                     <div id="ntfy-help-toggle" onclick="toggleNtfyHelp()"
@@ -690,19 +684,15 @@
                                 </div>
                                 <div style="display:flex;gap:0.75rem;align-items:flex-start">
                                     <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">2</span>
-                                    <div>Open ntfy → tap the <strong>+ button</strong> (top right)</div>
+                                    <div>Tap <strong>Open in ntfy app</strong> above — it opens the app with your topic pre-filled. Just tap Subscribe.</div>
                                 </div>
                                 <div style="display:flex;gap:0.75rem;align-items:flex-start">
                                     <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">3</span>
-                                    <div>In the <em>Topic name</em> field, paste your topic (tap the box above to copy it). Leave the server as <strong>ntfy.sh</strong></div>
+                                    <div>Or tap <strong>↗ Share topic</strong> to send your topic to another device via AirDrop, Messages, etc.</div>
                                 </div>
                                 <div style="display:flex;gap:0.75rem;align-items:flex-start">
                                     <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">4</span>
-                                    <div>Tap <strong>Subscribe</strong> — done! Alerts will appear as push notifications 🎉</div>
-                                </div>
-                                <div style="display:flex;gap:0.75rem;align-items:flex-start">
-                                    <span style="background:#4caf50;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">💡</span>
-                                    <div><em>Shortcut:</em> Tap <strong>Open in ntfy app →</strong> above — it skips steps 2 & 3 automatically</div>
+                                    <div>Or tap the topic box to copy it, then open ntfy → tap <strong>+</strong> → paste in the Topic name field → tap Subscribe 🎉</div>
                                 </div>
                             </div>
                         </div>
@@ -716,19 +706,15 @@
                                 </div>
                                 <div style="display:flex;gap:0.75rem;align-items:flex-start">
                                     <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">2</span>
-                                    <div>Open ntfy → tap the <strong>+ button</strong> (bottom right)</div>
+                                    <div>Tap <strong>Open in ntfy app</strong> above — it opens the app with your topic pre-filled. Just tap Subscribe.</div>
                                 </div>
                                 <div style="display:flex;gap:0.75rem;align-items:flex-start">
                                     <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">3</span>
-                                    <div>In the <em>Topic name</em> field, paste your topic (tap the box above to copy it). Server should stay <strong>ntfy.sh</strong></div>
+                                    <div>Or tap <strong>↗ Share topic</strong> to send your topic to another device via Messages, WhatsApp, etc.</div>
                                 </div>
                                 <div style="display:flex;gap:0.75rem;align-items:flex-start">
                                     <span style="background:var(--accent);color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">4</span>
-                                    <div>Tap <strong>Subscribe</strong> — done! You'll get alerts as push notifications 🎉</div>
-                                </div>
-                                <div style="display:flex;gap:0.75rem;align-items:flex-start">
-                                    <span style="background:#4caf50;color:#fff;border-radius:50%;width:22px;height:22px;display:flex;align-items:center;justify-content:center;font-size:0.75rem;font-weight:700;flex-shrink:0">💡</span>
-                                    <div><em>Shortcut:</em> Tap <strong>Open in ntfy app →</strong> above — it pre-fills the topic for you</div>
+                                    <div>Or tap the topic box to copy it, then open ntfy → tap <strong>+</strong> (bottom right) → paste in Topic name → tap Subscribe 🎉</div>
                                 </div>
                             </div>
                         </div>
@@ -1078,6 +1064,23 @@
             document.getElementById('ntfy-tab-android').style.color = platform === 'android' ? white : textColor;
         }
 
+        function shareNtfyTopic() {
+            const topic = document.getElementById('ntfy-topic-text').textContent;
+            if (navigator.share) {
+                navigator.share({
+                    title: 'NJ Transit Alerts — ntfy topic',
+                    text: `Subscribe to my NJ Transit train alerts on ntfy. Topic name: ${topic}`,
+                    url: `https://ntfy.sh/${topic}`
+                }).catch(() => {});
+            } else {
+                // Fallback: copy to clipboard
+                copyNtfyTopic();
+                const btn = document.getElementById('ntfy-share-btn');
+                btn.textContent = '✅ Copied!';
+                setTimeout(() => { btn.textContent = '↗ Share topic'; }, 2000);
+            }
+        }
+
         function copyNtfyTopic(el) {
             const topic = document.getElementById('ntfy-topic-text').textContent;
             navigator.clipboard.writeText(topic).then(() => {
@@ -1199,8 +1202,6 @@
             }
 
             // Always show ntfy setup box (new users get full setup, returning get brief confirmation)
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent('https://ntfy.sh/' + subscribeNtfyTopic)}`;
-            document.getElementById('ntfy-qr').src = qrUrl;
             document.getElementById('ntfy-topic-text').textContent = subscribeNtfyTopic;
             document.getElementById('ntfy-open-btn').href = `ntfy://${subscribeNtfyTopic}`;
             document.getElementById('ntfy-manage-link').href = manageUrl;
