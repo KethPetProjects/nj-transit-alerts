@@ -822,8 +822,15 @@
 
                 <div class="verification-box" id="unsubscribe-confirm-box">
                     <h3>⚠️ Confirm Unsubscribe</h3>
-                    <p>Are you sure you want to stop receiving train alerts for <strong id="unsub-phone-display"></strong>?</p>
-                    <div style="display:flex;gap:0.75rem;justify-content:center;margin-top:1rem">
+                    <p style="margin-bottom:0.75rem">We found your subscription for <strong id="unsub-phone-display"></strong>:</p>
+                    <div style="background:white;border-radius:8px;padding:0.75rem 1rem;margin-bottom:1rem;text-align:left;font-size:0.9rem;line-height:2">
+                        <div>🌅 Morning: <strong id="unsub-morning-train"></strong></div>
+                        <div>🌆 Evening: <strong id="unsub-evening-train"></strong></div>
+                    </div>
+                    <p style="font-size:0.9rem;margin-bottom:0.5rem">To confirm, enter your <strong>ntfy topic</strong> from your ntfy app:</p>
+                    <input type="text" id="unsub-topic-input" placeholder="njtransit-..."
+                           style="font-family:monospace;font-size:0.85rem;margin-bottom:0.75rem;text-align:left">
+                    <div style="display:flex;gap:0.75rem;justify-content:center">
                         <button class="btn btn-secondary" onclick="confirmUnsubscribe()">Yes, unsubscribe</button>
                         <button class="btn" style="background:var(--surface);border:1px solid var(--border)" onclick="goBackToUnsubForm()">Cancel</button>
                     </div>
@@ -1273,11 +1280,12 @@
             document.getElementById('unsubscribe-form').style.display = '';
         }
 
-        // Unsubscribe form — show confirm box
+        // Unsubscribe form — look up subscription then show confirm box with train details
         document.getElementById('unsubscribe-form').addEventListener('submit', async function(e) {
             e.preventDefault();
             const phone = document.getElementById('unsubscribe-phone').value;
             const unsubError = document.getElementById('unsubscribe-error');
+            const btn = this.querySelector('button[type="submit"]');
 
             if (!phone || phone.replace(/\D/g,'').length < 10) {
                 unsubError.textContent = 'Please enter the 10-digit phone number you used when subscribing.';
@@ -1286,23 +1294,50 @@
             }
             unsubError.classList.remove('show');
             unsubPhone = '+1' + phone.replace(/\D/g,'').slice(-10);
-            document.getElementById('unsub-phone-display').textContent = phone;
-            document.getElementById('unsubscribe-form').style.display = 'none';
-            document.getElementById('unsubscribe-confirm-box').classList.add('show');
+
+            btn.textContent = 'Looking up...';
+            btn.disabled = true;
+            try {
+                const res = await fetch(`${API_BASE}/subscription/${encodeURIComponent(unsubPhone)}`);
+                if (!res.ok) {
+                    unsubError.textContent = 'No subscription found for that number.';
+                    unsubError.classList.add('show');
+                    return;
+                }
+                const sub = await res.json();
+                document.getElementById('unsub-phone-display').textContent = phone;
+                document.getElementById('unsub-morning-train').textContent = `Train ${sub.morning_train}`;
+                document.getElementById('unsub-evening-train').textContent = `Train ${sub.evening_train}`;
+                document.getElementById('unsub-topic-input').value = '';
+                document.getElementById('unsubscribe-form').style.display = 'none';
+                document.getElementById('unsubscribe-confirm-box').classList.add('show');
+            } catch (err) {
+                unsubError.textContent = 'Network error. Please try again.';
+                unsubError.classList.add('show');
+            } finally {
+                btn.textContent = 'Unsubscribe';
+                btn.disabled = false;
+            }
         });
 
         async function confirmUnsubscribe() {
             const errorEl = document.getElementById('unsub-verify-error');
             errorEl.classList.remove('show');
+            const topic = document.getElementById('unsub-topic-input').value.trim();
+            if (!topic) {
+                errorEl.textContent = 'Please enter your ntfy topic — find it in your ntfy app.';
+                errorEl.classList.add('show');
+                return;
+            }
             try {
-                const response = await fetch(`${API_BASE}/unsubscribe/by-phone`, {
+                const response = await fetch(`${API_BASE}/unsubscribe/verify`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: unsubPhone })
+                    body: JSON.stringify({ phone: unsubPhone, topic })
                 });
                 if (!response.ok) {
                     const data = await response.json().catch(() => ({}));
-                    errorEl.textContent = data.detail || 'No subscription found for that number.';
+                    errorEl.textContent = data.detail || 'Topic code does not match. Check your ntfy app.';
                     errorEl.classList.add('show');
                     return;
                 }

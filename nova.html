@@ -1335,7 +1335,13 @@ async function handleVerify(text){
 // Unsubscribe flow
 async function handleUnsubPhone(text){
   const digits=text.replace(/\D/g,'');
-  if(digits.length!==10){ await novaSay("Need a valid 10-digit number!"); return; }
+  if(digits.length!==10){
+    showTyping();
+    const r=await callNova(`User wants to unsubscribe. I need their 10-digit US phone number. They typed: "${text}". If it looks like a partial or wrongly formatted number, gently help. If it's a question or off-topic, answer briefly then ask again. Keep it short.`);
+    removeTyping();
+    await novaSay(parseNovaResponse(r).clean);
+    return;
+  }
   const e164='+1'+digits;
   showTyping();
   try{
@@ -1344,42 +1350,46 @@ async function handleUnsubPhone(text){
     if(res.ok){
       const sub=await res.json();
       state.unsubPhone=e164;
-      const resp = await callNova(`Found subscription: Morning Train ${sub.morning_train}, Evening Train ${sub.evening_train}. Show this and ask if they really want to unsubscribe. Be a little sad about it 😢`);
+      // Show subscription details, then ask for ntfy topic as confirmation
+      const resp = await callNova(`Found the user's subscription: Morning Train ${sub.morning_train}, Evening Train ${sub.evening_train}. Show these details clearly. Then explain that to confirm unsubscribe, they need to enter their ntfy topic code from their ntfy app — this is for security so only they can unsubscribe. Be warm but a little sad 😢. Keep it concise.`);
       await novaSay(parseNovaResponse(resp).clean);
-      state.step='unsub_confirm';
-      showChips([
-        {name:'Yes, unsubscribe me', code:'yes'},
-        {name:'No, keep my alerts', code:'no'}
-      ], async opt => {
-        addMessage('user', opt.name);
-        if(opt.code==='yes') await doUnsub(e164);
-        else {
-          await novaSay("Phew! Smart choice. Your alerts are safe 🚂");
-          state.step='post';
-          showChips([{name:'📋 View subscription',code:'status'},{name:'🌐 Open main app',code:'mainapp'}], handlePostChip);
-        }
-      });
+      state.step='unsub_topic';
+      document.getElementById('userInput').placeholder='Your ntfy topic (njtransit-...)';
     } else {
       await novaSay("No subscription found for that number. Sure you used the right one? 🤔");
-      state.step='unsub_phone';
     }
   }catch(e){ removeTyping(); await novaSay("Trouble connecting. Try again!"); }
 }
 
-async function doUnsub(e164){
+async function handleUnsubTopic(text){
+  const topic=text.trim();
+  if(!topic.startsWith('njtransit-')){
+    showTyping();
+    const r=await callNova(`User is confirming unsubscribe and needs to enter their ntfy topic code (it starts with "njtransit-"). They typed: "${topic}". If it doesn't look like a valid topic, explain where to find it — in the ntfy app under their NJ Transit alert subscription, or from the confirmation message they received when they subscribed. If it's a question, answer briefly then redirect. Keep it short.`);
+    removeTyping();
+    await novaSay(parseNovaResponse(r).clean);
+    return;
+  }
   showTyping();
   try{
-    const res=await fetch(`${API_BASE}/unsubscribe/by-phone`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:e164})});
+    const res=await fetch(`${API_BASE}/unsubscribe/verify`,{
+      method:'POST',headers:{'Content-Type':'application/json'},
+      body:JSON.stringify({phone:state.unsubPhone, topic})
+    });
     removeTyping();
     if(res.ok){
       state.step='post';
-      const resp = await callNova("User successfully unsubscribed. Say goodbye warmly, let them know they can come back anytime. Keep it short.");
+      const resp=await callNova("User successfully unsubscribed. Say goodbye warmly, let them know they can come back anytime. Keep it short.");
       await novaSay(parseNovaResponse(resp).clean);
       showChips([{name:'🔔 Subscribe again',code:'sub'},{name:'🌐 Open main app',code:'mainapp'}], handleMainMenu);
     } else {
-      await novaSay("Hmm, couldn't unsubscribe. Try again?");
+      const data=await res.json().catch(()=>({}));
+      showTyping();
+      const r=await callNova(`Unsubscribe failed: ${data.detail||'Topic did not match'}. Tell the user kindly and ask them to re-enter their ntfy topic. Remind them where to find it. Keep it short.`);
+      removeTyping();
+      await novaSay(parseNovaResponse(r).clean);
     }
-  }catch(e){ removeTyping(); await novaSay("Network trouble!"); }
+  }catch(e){ removeTyping(); await novaSay("Network trouble! Try again."); }
 }
 
 async function handleCheckSub(text){
@@ -1546,6 +1556,7 @@ function getStepBack(step){
     'phone': 'evening_train',
     'consent': 'phone',
     'confirm': 'phone',
+    'unsub_topic': 'unsub_phone',
   };
   return backMap[step] || 'welcome';
 }
@@ -1594,6 +1605,12 @@ async function goBack(){
       await novaSay("Sure! What's your phone number?");
       document.getElementById('userInput').placeholder='Your 10-digit phone number';
       break;
+    case 'unsub_phone':
+      state.unsubPhone=null;
+      state.step='unsub_phone';
+      await novaSay("No problem! What's the phone number on your subscription?");
+      document.getElementById('userInput').placeholder='Your phone number';
+      break;
     case 'welcome':
     default:
       resetState();
@@ -1611,7 +1628,7 @@ async function sendMessage(){
   addMessage('user', text);
 
   // Check for back/restart intent first — works from any step
-  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','phone','consent','confirm'];
+  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','phone','consent','confirm','unsub_phone','unsub_topic'];
   if(isGoingBack(text) && backSteps.includes(state.step)){
     await goBack();
     return;
@@ -1677,6 +1694,7 @@ async function sendMessage(){
     case 'evening_time': await handleEveningTime(text); break;
     case 'phone': await handlePhone(text); break;
     case 'unsub_phone': await handleUnsubPhone(text); break;
+    case 'unsub_topic': await handleUnsubTopic(text); break;
     case 'check_phone': await handleCheckSub(text); break;
     default: {
       showTyping();
