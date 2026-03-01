@@ -685,10 +685,15 @@
                     </div>
 
                     <!-- Action buttons -->
-                    <div style="display:flex;gap:0.5rem;margin-bottom:0.75rem">
-                        <a id="ntfy-open-btn" href="#" class="btn btn-primary" style="flex:1;text-decoration:none;text-align:center">📱 Open in ntfy app</a>
+                    <div style="display:flex;gap:0.5rem;margin-bottom:0.5rem">
+                        <!-- Android only: deep link works on Android, not iOS -->
+                        <a id="ntfy-open-btn" href="#" class="btn btn-primary" style="flex:1;text-decoration:none;text-align:center;display:none">📱 Open in ntfy app</a>
                         <button onclick="shareNtfyTopic()" class="btn btn-secondary" style="flex:1" id="ntfy-share-btn">↗ Share topic</button>
                     </div>
+                    <!-- iOS hint: deep link not supported, show manual steps -->
+                    <p id="ntfy-ios-hint" style="display:none;font-size:0.82rem;color:var(--text-muted);margin-bottom:0.75rem;text-align:center">
+                        📋 Copy the topic above → open ntfy → tap <strong>+</strong> → paste → Subscribe
+                    </p>
 
                     <!-- Collapsible setup guide -->
                     <div id="ntfy-help-toggle" onclick="toggleNtfyHelp()"
@@ -1233,8 +1238,19 @@
 
             // Always show ntfy setup box (new users get full setup, returning get brief confirmation)
             document.getElementById('ntfy-topic-text').textContent = subscribeNtfyTopic;
-            document.getElementById('ntfy-open-btn').href = `ntfy://ntfy.sh/${subscribeNtfyTopic}`;
             document.getElementById('ntfy-manage-link').href = manageUrl;
+
+            // ntfy:// deep links only work on Android — iOS users must copy and paste manually
+            const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+            if (isIOS) {
+                document.getElementById('ntfy-open-btn').style.display = 'none';
+                document.getElementById('ntfy-ios-hint').style.display = 'block';
+            } else {
+                document.getElementById('ntfy-open-btn').href = `ntfy://ntfy.sh/${subscribeNtfyTopic}`;
+                document.getElementById('ntfy-open-btn').style.display = '';
+                document.getElementById('ntfy-ios-hint').style.display = 'none';
+            }
+
             document.getElementById('ntfy-setup-box').classList.add('show');
 
             // Store for success message

@@ -1258,9 +1258,10 @@ async function showNtfySuccess(){
     <div class="summary-header">🔔 YOUR PUSH ALERT TOPIC</div>
     <div style="font-family:monospace;font-size:0.85rem;background:rgba(0,0,0,0.3);padding:0.5rem 0.75rem;border-radius:6px;word-break:break-all;margin:0.5rem 0">${topic}</div>
     <div style="display:flex;gap:0.5rem;margin:0.5rem 0">
-      <a href="ntfy://ntfy.sh/${topic}" style="flex:1;text-align:center;padding:0.4rem;background:var(--accent);color:#fff;border-radius:6px;text-decoration:none;font-size:0.8rem">📱 Open in ntfy</a>
+      ${(/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) ? '' : `<a href="ntfy://ntfy.sh/${topic}" style="flex:1;text-align:center;padding:0.4rem;background:var(--accent);color:#fff;border-radius:6px;text-decoration:none;font-size:0.8rem">📱 Open in ntfy</a>`}
       <button onclick="shareNovaTopic('${topic}')" style="flex:1;padding:0.4rem;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;cursor:pointer;font-size:0.8rem">↗ Share topic</button>
     </div>
+    ${(/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) ? '<div style="font-size:0.78rem;opacity:0.8;margin-bottom:0.25rem">📋 Copy the topic → open ntfy → tap <strong>+</strong> → paste → Subscribe</div>' : ''}
     <div style="font-size:0.75rem;opacity:0.75">Keep your topic private — it's your personal alert channel.</div>
     <a href="${manageUrl}" target="_blank" style="display:block;margin-top:0.5rem;color:var(--accent2);font-size:0.8rem">⚙️ Manage subscription →</a>`;
   const resp = await callNova("User is subscribed via push notifications (ntfy app)! Give a short enthusiastic message. Tell them to install the ntfy app and subscribe to their personal topic to start receiving alerts.");
@@ -1306,9 +1307,10 @@ async function handleVerify(text){
           <div class="summary-header">🔔 ALSO GET PUSH NOTIFICATIONS</div>
           <div style="font-family:monospace;font-size:0.8rem;background:rgba(0,0,0,0.3);padding:0.4rem 0.75rem;border-radius:6px;word-break:break-all;margin:0.4rem 0">${topic}</div>
           <div style="display:flex;gap:0.5rem;margin:0.4rem 0">
-            <a href="ntfy://ntfy.sh/${topic}" style="flex:1;text-align:center;padding:0.4rem;background:var(--accent);color:#fff;border-radius:6px;text-decoration:none;font-size:0.75rem">📱 Open in ntfy</a>
+            ${(/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) ? '' : `<a href="ntfy://ntfy.sh/${topic}" style="flex:1;text-align:center;padding:0.4rem;background:var(--accent);color:#fff;border-radius:6px;text-decoration:none;font-size:0.75rem">📱 Open in ntfy</a>`}
             <button onclick="shareNovaTopic('${topic}')" style="flex:1;padding:0.4rem;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;cursor:pointer;font-size:0.75rem">↗ Share topic</button>
           </div>
+          ${(/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) ? '<div style="font-size:0.78rem;opacity:0.8;margin-bottom:0.25rem">📋 Copy the topic → open ntfy → tap <strong>+</strong> → paste → Subscribe</div>' : ''}
           <a href="${manageUrl}" target="_blank" style="display:block;margin-top:0.4rem;color:var(--accent2);font-size:0.8rem">⚙️ Manage →</a>`;
         chat.appendChild(ntfyEl);
         chat.scrollTop = chat.scrollHeight;
