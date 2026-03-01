@@ -1219,7 +1219,7 @@ async function doSubscribe(){
       const data = await res.json();
       state.ntfy_topic = data.ntfy_topic || '';
       // Always active — no verification step
-      await showNtfySuccess(data.returning || false);
+      await showNtfySuccess(data.returning || false, data.reactivated || false);
     } else {
       const d=await res.json();
       await novaSay(`Hmm, something went sideways: ${d.detail}. Want to try again?`);
@@ -1251,7 +1251,7 @@ function shareNovaTopic(topic) {
   }
 }
 
-async function showNtfySuccess(returning=false){
+async function showNtfySuccess(returning=false, reactivated=false){
   state.step = 'post';
   const topic = state.ntfy_topic || '';
   const manageUrl = `https://black-plant-0162ad510.4.azurestaticapps.net/?topic=${topic}`;
@@ -1265,9 +1265,11 @@ async function showNtfySuccess(returning=false){
       <button onclick="shareNovaTopic('${topic}')" style="flex:1;padding:0.4rem;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;cursor:pointer;font-size:0.8rem">↗ Share topic</button>
     </div>
     ${(/iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream) ? '<div style="font-size:0.78rem;opacity:0.8;margin-bottom:0.25rem">📋 Copy the topic → open ntfy → tap <strong>+</strong> → paste → Subscribe</div>' : ''}
-    ${returning ? '<div style="font-size:0.78rem;color:#F4A261;margin-top:0.25rem">⚠️ Your topic is unchanged — make sure it\'s still active in your ntfy app. If you removed it, add it back using the topic above.</div>' : '<div style="font-size:0.75rem;opacity:0.75">Keep your topic private — it\'s your personal alert channel.</div>'}
+    ${(returning || reactivated) ? '<div style="font-size:0.78rem;color:#F4A261;margin-top:0.25rem">⚠️ Your topic is unchanged — make sure it\'s still active in your ntfy app. If you removed it, add it back using the topic above.</div>' : '<div style="font-size:0.75rem;opacity:0.75">Keep your topic private — it\'s your personal alert channel.</div>'}
     <a href="${manageUrl}" target="_blank" style="display:block;margin-top:0.5rem;color:var(--accent2);font-size:0.8rem">⚙️ Manage subscription →</a>`;
-  const resp = await callNova(returning
+  const resp = await callNova(reactivated
+    ? "User just reactivated their subscription after previously unsubscribing — give a warm 'Welcome back!' message. Their ntfy topic is the same as before, so remind them to check it's still active in their ntfy app. Keep it short and friendly."
+    : returning
     ? "User updated their train selections. Their ntfy topic is unchanged so alerts continue to the same ntfy subscription. Give a short warm confirmation. Remind them their ntfy topic stays the same — but if they ever removed it from the app, they'll need to add it back."
     : "User is subscribed via push notifications (ntfy app)! Give a short enthusiastic message. Tell them to install the ntfy app and subscribe to their personal topic to start receiving alerts.");
   await novaSay(parseNovaResponse(resp).clean, ntfyCard);

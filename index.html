@@ -1237,7 +1237,10 @@
             submitBtn.disabled = false;
             submitBtn.textContent = 'Subscribe';
 
-            if (data.returning) {
+            if (data.reactivated) {
+                document.getElementById('ntfy-setup-box').querySelector('h3').textContent = '👋 Welcome back!';
+                document.getElementById('ntfy-setup-box').querySelector('p').textContent = 'Your alerts are reactivated! Your ntfy topic is the same as before — make sure it\'s still active in your ntfy app. If you removed it, add it back using the topic name below.';
+            } else if (data.returning) {
                 document.getElementById('ntfy-setup-box').querySelector('h3').textContent = '✅ Trains updated!';
                 document.getElementById('ntfy-setup-box').querySelector('p').textContent = 'Your train selections have been saved. Your ntfy topic is unchanged — alerts continue as before. If you ever removed this topic from your ntfy app, add it back using the topic name below.';
             }
