@@ -612,11 +612,11 @@
                         <p class="help-text">Your usual train heading home</p>
                     </div>
 
-                    <!-- Phone Number (optional) -->
+                    <!-- Phone Number (required) -->
                     <div class="form-group">
-                        <label for="phone">Phone Number <span style="font-weight:400;color:var(--text-muted)">(optional — for future SMS alerts)</span></label>
-                        <input type="tel" id="phone" placeholder="(555) 123-4567" autocomplete="tel">
-                        <p class="help-text">Leave blank to use push notifications only via the free ntfy app</p>
+                        <label for="phone">Phone Number</label>
+                        <input type="tel" id="phone" placeholder="(555) 123-4567" autocomplete="tel" required>
+                        <p class="help-text">Used to identify your subscription — needed to manage or unsubscribe</p>
                     </div>
 
                     <!-- Notification Preferences -->
@@ -632,43 +632,11 @@
                         </div>
                     </div>
 
-                    <!-- SMS Consent (only shown when phone is entered) -->
-                    <div class="consent-box" id="sms-consent-box" style="display:none">
-                        <div class="checkbox-group">
-                            <input type="checkbox" id="sms-consent">
-                            <label for="sms-consent">
-                                I agree to receive SMS train delay alerts from <strong>NJ Transit Delay Alerts</strong>.
-                                Message frequency varies based on train delays. Message &amp; data rates may apply.
-                                Reply <strong>STOP</strong> to unsubscribe, <strong>HELP</strong> for help.
-                                <a href="privacy.html" target="_blank">Privacy Policy</a> ·
-                                <a href="terms.html" target="_blank">Terms</a>
-                            </label>
-                        </div>
-                    </div>
-
                     <p class="error-msg" id="subscribe-error"></p>
                     <button type="submit" class="btn btn-primary">Subscribe to Alerts</button>
                 </form>
 
-                <div class="verification-box" id="verification-box">
-                    <h3>📲 Verify Your Number</h3>
-                    <p>We sent a 6-digit code to your phone. Enter it below:</p>
-                    <input type="text" class="code-input" id="verification-code" maxlength="6" placeholder="000000" inputmode="numeric" autocomplete="one-time-code">
-                    <p class="error-msg" id="verify-error"></p>
-                    <button class="btn btn-primary" id="verify-btn" onclick="verifyCode()">Verify & Activate</button>
-                    <div class="verify-actions">
-                        <button type="button" class="verify-back" onclick="goBackToForm()">← Edit selections</button>
-                        <button type="button" class="verify-resend" id="resend-btn" onclick="resendCode()" disabled>Resend code (30s)</button>
-                    </div>
-                    <!-- Show ntfy topic while user waits for SMS code -->
-                    <div id="verify-ntfy-hint" style="display:none;margin-top:1rem;padding:0.75rem;background:var(--surface);border-radius:8px;border:1px solid var(--border)">
-                        <p style="font-size:0.8rem;margin-bottom:0.4rem">🔔 <strong>While you wait</strong> — set up push notifications too:</p>
-                        <div style="font-family:monospace;font-size:0.8rem;word-break:break-all;padding:0.3rem 0.5rem;background:rgba(0,0,0,0.05);border-radius:4px" id="verify-ntfy-topic"></div>
-                        <p style="font-size:0.75rem;color:var(--text-muted);margin-top:0.4rem">Install the <a href="https://ntfy.sh" target="_blank">ntfy app</a> and subscribe to the topic above.</p>
-                    </div>
-                </div>
-
-                <!-- ntfy setup box: shown immediately after subscribe (no phone) -->
+                <!-- ntfy setup box: shown immediately after subscribe -->
                 <div class="verification-box" id="ntfy-setup-box">
                     <div class="success-icon">✅</div>
                     <h3>You're subscribed! One last step.</h3>
@@ -816,33 +784,29 @@
                 <div class="info-box">
                     <strong>How to unsubscribe:</strong>
                     <ol style="margin:0.5rem 0 0 1.2rem;line-height:1.8">
-                        <li><strong>Easiest:</strong> Tap any alert notification you received → it opens your manage page → tap Unsubscribe.</li>
-                        <li><strong>Or:</strong> Use the manage link you saved when you subscribed.</li>
-                        <li><strong>SMS subscribers only:</strong> Enter your phone number below to receive an unsubscribe code.</li>
+                        <li><strong>Easiest:</strong> Tap any alert notification → opens your manage page → tap Unsubscribe.</li>
+                        <li><strong>Or:</strong> Enter your phone number below.</li>
                     </ol>
                 </div>
 
                 <form id="unsubscribe-form">
                     <div class="form-group">
-                        <label for="unsubscribe-phone">Phone Number <span style="font-weight:400;color:var(--text-muted)">(SMS subscribers only)</span></label>
+                        <label for="unsubscribe-phone">Phone Number</label>
                         <input type="tel" id="unsubscribe-phone" placeholder="(555) 123-4567" autocomplete="tel">
-                        <p class="help-text">Only needed if you subscribed with a phone number</p>
+                        <p class="help-text">The number you used when subscribing</p>
                     </div>
-
                     <p class="error-msg" id="unsubscribe-error"></p>
-                    <button type="submit" class="btn btn-secondary">Send Unsubscribe Code</button>
+                    <button type="submit" class="btn btn-secondary">Unsubscribe</button>
                 </form>
 
-                <div class="verification-box" id="unsubscribe-verification-box">
-                    <h3>📲 Verify Cancellation</h3>
-                    <p>We sent a verification code to your phone. Enter it to confirm unsubscribe:</p>
-                    <input type="text" class="code-input" id="unsubscribe-code" maxlength="6" placeholder="000000" inputmode="numeric" autocomplete="one-time-code">
-                    <p class="error-msg" id="unsub-verify-error"></p>
-                    <button class="btn btn-secondary" onclick="confirmUnsubscribe()">Confirm Unsubscribe</button>
-                    <div class="verify-actions">
-                        <button type="button" class="verify-back" onclick="goBackToUnsubForm()">← Change number</button>
-                        <button type="button" class="verify-resend" id="unsub-resend-btn" onclick="resendUnsubCode()" disabled>Resend code (30s)</button>
+                <div class="verification-box" id="unsubscribe-confirm-box">
+                    <h3>⚠️ Confirm Unsubscribe</h3>
+                    <p>Are you sure you want to stop receiving train alerts for <strong id="unsub-phone-display"></strong>?</p>
+                    <div style="display:flex;gap:0.75rem;justify-content:center;margin-top:1rem">
+                        <button class="btn btn-secondary" onclick="confirmUnsubscribe()">Yes, unsubscribe</button>
+                        <button class="btn" style="background:var(--surface);border:1px solid var(--border)" onclick="goBackToUnsubForm()">Cancel</button>
                     </div>
+                    <p class="error-msg" id="unsub-verify-error"></p>
                 </div>
 
                 <div class="success-message" id="unsubscribe-success">
@@ -1065,12 +1029,6 @@
             document.getElementById(tabName + '-tab').classList.add('active');
         }
 
-        // Show/hide SMS consent box based on whether phone is entered
-        document.getElementById('phone').addEventListener('input', function() {
-            const hasPhone = this.value.trim().length > 0;
-            document.getElementById('sms-consent-box').style.display = hasPhone ? '' : 'none';
-        });
-
         // Handle manage page if ?topic= is in URL
         (function() {
             const params = new URLSearchParams(window.location.search);
@@ -1172,44 +1130,28 @@
             const ontimeAlerts = document.getElementById('ontime-alerts').checked;
 
             const errorEl = document.getElementById('subscribe-error');
-            if (!stationCode || !lineCode || !morningTrain || !eveningTrain) {
+            const digits = phone.replace(/\D/g, '');
+            if (!stationCode || !lineCode || !morningTrain || !eveningTrain || !phone.trim()) {
                 let missing = [];
                 if (!lineCode) missing.push('train line');
                 if (!stationCode) missing.push('home station');
                 if (!morningTrain) missing.push('train to NYC');
                 if (!eveningTrain) missing.push('train from NYC');
+                if (!phone.trim()) missing.push('phone number');
                 errorEl.textContent = 'Please fill in: ' + missing.join(', ');
                 errorEl.classList.add('show');
                 return;
             }
+            if (digits.length !== 10) {
+                errorEl.textContent = 'Please enter a valid 10-digit phone number.';
+                errorEl.classList.add('show');
+                return;
+            }
             errorEl.classList.remove('show');
-
-            // Format phone as E.164
-            const digits = phone.replace(/\D/g, '');
             subscribePhone = '+1' + digits;
 
-            // Phone is optional — only require consent when phone is given
-            const hasPhone = phone.trim().length > 0;
-            if (hasPhone) {
-                const digits = phone.replace(/\D/g, '');
-                if (digits.length !== 10) {
-                    errorEl.textContent = 'Please enter a valid 10-digit phone number, or leave blank.';
-                    errorEl.classList.add('show');
-                    return;
-                }
-                const consentChecked = document.getElementById('sms-consent').checked;
-                if (!consentChecked) {
-                    errorEl.textContent = 'Please accept the SMS consent to receive text alerts.';
-                    errorEl.classList.add('show');
-                    return;
-                }
-                subscribePhone = '+1' + digits;
-            } else {
-                subscribePhone = '';
-            }
-
             subscribePayload = {
-                phone: subscribePhone || null,
+                phone: subscribePhone,
                 morning_train: morningTrain,
                 evening_train: eveningTrain,
                 delay_alerts: delayAlerts,
@@ -1250,24 +1192,13 @@
             submitBtn.disabled = false;
             submitBtn.textContent = 'Subscribe';
 
-            if (data.status === 'pending') {
-                // Phone flow — show verification box
-                document.getElementById('verification-box').classList.add('show');
-                startResendCountdown('resend-btn');
-                // Also show the ntfy topic in the verification box while they wait
-                if (subscribeNtfyTopic) {
-                    document.getElementById('verify-ntfy-topic').textContent = `ntfy.sh/${subscribeNtfyTopic}`;
-                    document.getElementById('verify-ntfy-hint').style.display = '';
-                }
-            } else {
-                // No-phone flow — show ntfy setup box immediately
-                const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://ntfy.sh/${subscribeNtfyTopic}`;
-                document.getElementById('ntfy-qr').src = qrUrl;
-                document.getElementById('ntfy-topic-text').textContent = `ntfy.sh/${subscribeNtfyTopic}`;
-                document.getElementById('ntfy-open-btn').href = `ntfy://${subscribeNtfyTopic}`;
-                document.getElementById('ntfy-manage-link').href = manageUrl;
-                document.getElementById('ntfy-setup-box').classList.add('show');
-            }
+            // Always active — show ntfy setup box immediately
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=https://ntfy.sh/${subscribeNtfyTopic}`;
+            document.getElementById('ntfy-qr').src = qrUrl;
+            document.getElementById('ntfy-topic-text').textContent = `ntfy.sh/${subscribeNtfyTopic}`;
+            document.getElementById('ntfy-open-btn').href = `ntfy://${subscribeNtfyTopic}`;
+            document.getElementById('ntfy-manage-link').href = manageUrl;
+            document.getElementById('ntfy-setup-box').classList.add('show');
 
             // Store for success message
             sessionStorage.setItem('subscription', JSON.stringify({
@@ -1281,200 +1212,49 @@
             }));
         });
 
-        // Auto-submit verification when 6 digits entered
-        document.getElementById('verification-code').addEventListener('input', function() {
-            if (this.value.replace(/\D/g,'').length === 6) verifyCode();
-        });
-        document.getElementById('unsubscribe-code').addEventListener('input', function() {
-            if (this.value.replace(/\D/g,'').length === 6) confirmUnsubscribe();
-        });
-
-        // Back to form from verification
-        function goBackToForm() {
-            document.getElementById('verification-box').classList.remove('show');
-            document.getElementById('subscribe-form').style.display = '';
-            document.getElementById('verification-code').value = '';
-            document.getElementById('verify-error').classList.remove('show');
-        }
-        function goBackToUnsubForm() {
-            document.getElementById('unsubscribe-verification-box').classList.remove('show');
-            document.getElementById('unsubscribe-form').style.display = '';
-            document.getElementById('unsubscribe-code').value = '';
-        }
-
-        // Resend countdown
-        let resendTimer = null;
-        function startResendCountdown(btnId) {
-            const btn = document.getElementById(btnId);
-            btn.disabled = true;
-            let secs = 30;
-            btn.textContent = `Resend code (${secs}s)`;
-            resendTimer = setInterval(() => {
-                secs--;
-                if (secs <= 0) {
-                    clearInterval(resendTimer);
-                    btn.disabled = false;
-                    btn.textContent = 'Resend code';
-                } else {
-                    btn.textContent = `Resend code (${secs}s)`;
-                }
-            }, 1000);
-        }
-        async function resendCode() {
-            document.getElementById('verification-code').value = '';
-            startResendCountdown('resend-btn');
-            if (subscribePayload) {
-                try {
-                    await fetch(`${API_BASE}/subscribe`, {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(subscribePayload)
-                    });
-                } catch (e) { console.error('Resend failed:', e); }
-            }
-        }
-        async function resendUnsubCode() {
-            document.getElementById('unsubscribe-code').value = '';
-            startResendCountdown('unsub-resend-btn');
-            try {
-                await fetch(`${API_BASE}/unsubscribe/request`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: unsubPhone.replace(/\D/g, '') })
-                });
-            } catch (e) { console.error('Resend unsub code failed:', e); }
-        }
-
-        // Verification
-        async function verifyCode() {
-            const code = document.getElementById('verification-code').value.replace(/\D/g,'');
-            const errorEl = document.getElementById('verify-error');
-
-            if (code.length !== 6) {
-                errorEl.textContent = 'Please enter the 6-digit code from your SMS.';
-                errorEl.classList.add('show');
-                return;
-            }
-            errorEl.classList.remove('show');
-
-            try {
-                const res = await fetch(`${API_BASE}/verify`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: subscribePhone, code: code })
-                });
-                const data = await res.json();
-                if (!res.ok) {
-                    errorEl.textContent = data.detail || 'Invalid code. Please try again.';
-                    errorEl.classList.add('show');
-                    return;
-                }
-            } catch (err) {
-                errorEl.textContent = 'Network error. Please try again.';
-                errorEl.classList.add('show');
-                return;
-            }
-
-            // Success — show confirmation
-            document.getElementById('verification-box').classList.remove('show');
-            document.getElementById('success-message').classList.add('show');
-
-            // Display subscription details
-            const sub = JSON.parse(sessionStorage.getItem('subscription'));
-            document.getElementById('success-station').textContent = sub.station;
-            document.getElementById('success-line').textContent = sub.line;
-            document.getElementById('success-morning').textContent = sub.morning;
-            document.getElementById('success-evening').textContent = sub.evening;
-
-            // Show ntfy topic if available
-            if (sub.ntfy_topic) {
-                document.getElementById('success-ntfy-box').style.display = '';
-                document.getElementById('success-ntfy-topic').textContent = `ntfy.sh/${sub.ntfy_topic}`;
-                document.getElementById('success-manage-link').href = sub.manage_url || '#';
-            }
-        }
-
         // Store phone across unsubscribe steps
         let unsubPhone = '';
 
-        // Unsubscribe form
+        function goBackToUnsubForm() {
+            document.getElementById('unsubscribe-confirm-box').classList.remove('show');
+            document.getElementById('unsubscribe-form').style.display = '';
+        }
+
+        // Unsubscribe form — show confirm box
         document.getElementById('unsubscribe-form').addEventListener('submit', async function(e) {
             e.preventDefault();
-
             const phone = document.getElementById('unsubscribe-phone').value;
             const unsubError = document.getElementById('unsubscribe-error');
-            const submitBtn = this.querySelector('button[type="submit"]');
 
             if (!phone || phone.replace(/\D/g,'').length < 10) {
-                unsubError.textContent = 'Please enter the 10-digit phone number you subscribed with. If you subscribed without a phone, tap the manage link in any alert notification instead.';
+                unsubError.textContent = 'Please enter the 10-digit phone number you used when subscribing.';
                 unsubError.classList.add('show');
                 return;
             }
             unsubError.classList.remove('show');
-
-            submitBtn.textContent = 'Checking...';
-            submitBtn.disabled = true;
-
-            try {
-                const response = await fetch(`${API_BASE}/unsubscribe/request`, {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: '+1' + phone.replace(/\D/g, '').slice(-10) })
-                });
-
-                if (!response.ok) {
-                    const data = await response.json().catch(() => ({}));
-                    unsubError.textContent = data.detail || 'No subscription found for this number.';
-                    unsubError.classList.add('show');
-                    submitBtn.textContent = 'Request Unsubscribe';
-                    submitBtn.disabled = false;
-                    return;
-                }
-
-                unsubPhone = phone;
-                document.getElementById('unsubscribe-form').style.display = 'none';
-                document.getElementById('unsubscribe-verification-box').classList.add('show');
-                startResendCountdown('unsub-resend-btn');
-
-            } catch (error) {
-                unsubError.textContent = 'Network error. Please try again.';
-                unsubError.classList.add('show');
-                submitBtn.textContent = 'Request Unsubscribe';
-                submitBtn.disabled = false;
-            }
+            unsubPhone = '+1' + phone.replace(/\D/g,'').slice(-10);
+            document.getElementById('unsub-phone-display').textContent = phone;
+            document.getElementById('unsubscribe-form').style.display = 'none';
+            document.getElementById('unsubscribe-confirm-box').classList.add('show');
         });
 
         async function confirmUnsubscribe() {
-            const code = document.getElementById('unsubscribe-code').value.replace(/\D/g,'');
             const errorEl = document.getElementById('unsub-verify-error');
-
-            if (code.length !== 6) {
-                errorEl.textContent = 'Please enter the 6-digit code from your SMS.';
-                errorEl.classList.add('show');
-                return;
-            }
             errorEl.classList.remove('show');
-
             try {
-                const response = await fetch(`${API_BASE}/unsubscribe/confirm`, {
+                const response = await fetch(`${API_BASE}/unsubscribe/by-phone`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        phone: unsubPhone.replace(/\D/g, ''),
-                        code: code
-                    })
+                    body: JSON.stringify({ phone: unsubPhone })
                 });
-
                 if (!response.ok) {
                     const data = await response.json().catch(() => ({}));
-                    errorEl.textContent = data.detail || 'Invalid code. Please try again.';
+                    errorEl.textContent = data.detail || 'No subscription found for that number.';
                     errorEl.classList.add('show');
                     return;
                 }
-
-                document.getElementById('unsubscribe-verification-box').classList.remove('show');
+                document.getElementById('unsubscribe-confirm-box').classList.remove('show');
                 document.getElementById('unsubscribe-success').classList.add('show');
-
             } catch (error) {
                 errorEl.textContent = 'Network error. Please try again.';
                 errorEl.classList.add('show');

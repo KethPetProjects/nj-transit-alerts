@@ -697,7 +697,6 @@ a:hover { text-decoration: underline; }
 </head>
 <body>
 
-<div class="test-banner">⚡ TEST MODE — Use code 000000 to verify any subscription</div>
 
 <div class="header">
   <div class="nova-logo">
@@ -878,8 +877,8 @@ Your personality:
 
 You guide users through these steps IN ORDER:
 1. Welcome + ask what they want (subscribe, unsubscribe, check subscription)
-2. If subscribing: ask LINE → STATION → MORNING TIME → [show trains] → EVENING TIME → [show trains] → PHONE → SUMMARY → CONFIRM
-3. If unsubscribing: ask PHONE → verify subscription exists → send code → confirm
+2. If subscribing: ask LINE → STATION → MORNING TIME → [show trains] → EVENING TIME → [show trains] → PHONE → SUMMARY → CONFIRM (subscription is immediately active, no verification code needed)
+3. If unsubscribing: ask PHONE → verify subscription exists → ask to confirm → unsubscribe (no code needed)
 
 IMPORTANT RULES:
 - Keep responses to 1-3 sentences
@@ -1221,22 +1220,14 @@ async function doSubscribe(){
       ontime_alerts: true,
       station: state.station || ''
     };
-    if (state.phone) body.phone = '+1' + state.phone.replace(/\D/g, '');
+    body.phone = '+1' + state.phone.replace(/\D/g, '');
     const res=await fetch(`${API_BASE}/subscribe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     removeTyping();
     if(res.ok){
       const data = await res.json();
       state.ntfy_topic = data.ntfy_topic || '';
-      if (data.status === 'active') {
-        // No phone — directly active, show ntfy setup
-        await showNtfySuccess();
-      } else {
-        // Phone provided — needs verification
-        const resp = await callNova("Subscription request sent! Tell user to check their phone for a 6-digit verification code. Be enthusiastic but brief.");
-        await novaSay(parseNovaResponse(resp).clean);
-        state.step='verify';
-        document.getElementById('userInput').placeholder='Enter 6-digit code (or 000000 to test)';
-      }
+      // Always active — no verification step
+      await showNtfySuccess();
     } else {
       const d=await res.json();
       await novaSay(`Hmm, something went sideways: ${d.detail}. Want to try again?`);
@@ -1348,11 +1339,11 @@ async function handleUnsubPhone(text){
       await novaSay(parseNovaResponse(resp).clean);
       state.step='unsub_confirm';
       showChips([
-        {name:'Yes, send me a code', code:'yes'},
+        {name:'Yes, unsubscribe me', code:'yes'},
         {name:'No, keep my alerts', code:'no'}
       ], async opt => {
         addMessage('user', opt.name);
-        if(opt.code==='yes') await requestUnsubCode(e164);
+        if(opt.code==='yes') await doUnsub(e164);
         else {
           await novaSay("Phew! Smart choice. Your alerts are safe 🚂");
           state.step='post';
@@ -1366,27 +1357,10 @@ async function handleUnsubPhone(text){
   }catch(e){ removeTyping(); await novaSay("Trouble connecting. Try again!"); }
 }
 
-async function requestUnsubCode(e164){
+async function doUnsub(e164){
   showTyping();
   try{
-    const res=await fetch(`${API_BASE}/unsubscribe/request`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:e164})});
-    removeTyping();
-    if(res.ok){
-      await novaSay("📲 Sent a 6-digit code to your phone. Enter it to confirm — this protects you from accidental unsubscribes!");
-      state.step='unsub_verify';
-      document.getElementById('userInput').placeholder='Enter 6-digit code (or 000000 to test)';
-    } else {
-      await novaSay("Couldn't send the code. Try again?");
-    }
-  }catch(e){ removeTyping(); await novaSay("Network trouble!"); }
-}
-
-async function handleUnsubVerify(text){
-  const code=text.replace(/\D/g,'');
-  if(code.length!==6){ await novaSay("6 digits please!"); return; }
-  showTyping();
-  try{
-    const res=await fetch(`${API_BASE}/unsubscribe/confirm`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:state.unsubPhone,code})});
+    const res=await fetch(`${API_BASE}/unsubscribe/by-phone`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({phone:e164})});
     removeTyping();
     if(res.ok){
       state.step='post';
@@ -1394,7 +1368,7 @@ async function handleUnsubVerify(text){
       await novaSay(parseNovaResponse(resp).clean);
       showChips([{name:'🔔 Subscribe again',code:'sub'},{name:'🌐 Open main app',code:'mainapp'}], handleMainMenu);
     } else {
-      await novaSay("Code didn't match. Try again or use 000000 in test mode!");
+      await novaSay("Hmm, couldn't unsubscribe. Try again?");
     }
   }catch(e){ removeTyping(); await novaSay("Network trouble!"); }
 }
@@ -1564,7 +1538,6 @@ function getStepBack(step){
     'phone': 'alert_method',
     'consent': 'phone',
     'confirm': 'phone',
-    'verify': 'phone',
   };
   return backMap[step] || 'welcome';
 }
@@ -1630,7 +1603,7 @@ async function sendMessage(){
   addMessage('user', text);
 
   // Check for back/restart intent first — works from any step
-  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','alert_method','phone','consent','confirm','verify'];
+  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','alert_method','phone','consent','confirm'];
   if(isGoingBack(text) && backSteps.includes(state.step)){
     await goBack();
     return;
@@ -1685,9 +1658,7 @@ async function sendMessage(){
     case 'morning_time': await handleMorningTime(text); break;
     case 'evening_time': await handleEveningTime(text); break;
     case 'phone': await handlePhone(text); break;
-    case 'verify': await handleVerify(text); break;
     case 'unsub_phone': await handleUnsubPhone(text); break;
-    case 'unsub_verify': await handleUnsubVerify(text); break;
     case 'check_phone': await handleCheckSub(text); break;
     default: {
       showTyping();
