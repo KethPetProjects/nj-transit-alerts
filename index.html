@@ -1238,9 +1238,8 @@
             submitBtn.textContent = 'Subscribe';
 
             if (data.returning) {
-                // Returning user — just confirm trains updated, show manage link
                 document.getElementById('ntfy-setup-box').querySelector('h3').textContent = '✅ Trains updated!';
-                document.getElementById('ntfy-setup-box').querySelector('p').textContent = 'Your train selections have been saved. Your ntfy topic stays the same — no need to set up the app again.';
+                document.getElementById('ntfy-setup-box').querySelector('p').textContent = 'Your train selections have been saved. Your ntfy topic is unchanged — alerts continue as before. If you ever removed this topic from your ntfy app, add it back using the topic name below.';
             }
 
             // Always show ntfy setup box (new users get full setup, returning get brief confirmation)
