@@ -1251,7 +1251,7 @@ async function showNtfySuccess(){
   state.step = 'post';
   const topic = state.ntfy_topic || '';
   const manageUrl = `https://black-plant-0162ad510.4.azurestaticapps.net/?topic=${topic}`;
-  const qrUrl = topic ? `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent('ntfy://' + topic)}` : '';
+  const qrUrl = topic ? `https://api.qrserver.com/v1/create-qr-code/?size=120x120&data=${encodeURIComponent('https://ntfy.sh/' + topic)}` : '';
   const ntfyCard = document.createElement('div');
   ntfyCard.className = 'summary-card';
   ntfyCard.innerHTML = `
@@ -1296,7 +1296,7 @@ async function handleVerify(text){
       if (state.ntfy_topic) {
         const topic = state.ntfy_topic;
         const manageUrl = `https://black-plant-0162ad510.4.azurestaticapps.net/?topic=${topic}`;
-        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent('ntfy://' + topic)}`;
+        const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=100x100&data=${encodeURIComponent('https://ntfy.sh/' + topic)}`;
         const ntfyEl = document.createElement('div');
         ntfyEl.className = 'summary-card';
         ntfyEl.style.marginTop = '0.5rem';

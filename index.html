@@ -1192,8 +1192,14 @@
             submitBtn.disabled = false;
             submitBtn.textContent = 'Subscribe';
 
-            // Always active — show ntfy setup box immediately
-            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent('ntfy://' + subscribeNtfyTopic)}`;
+            if (data.returning) {
+                // Returning user — just confirm trains updated, show manage link
+                document.getElementById('ntfy-setup-box').querySelector('h3').textContent = '✅ Trains updated!';
+                document.getElementById('ntfy-setup-box').querySelector('p').textContent = 'Your train selections have been saved. Your ntfy topic stays the same — no need to set up the app again.';
+            }
+
+            // Always show ntfy setup box (new users get full setup, returning get brief confirmation)
+            const qrUrl = `https://api.qrserver.com/v1/create-qr-code/?size=160x160&data=${encodeURIComponent('https://ntfy.sh/' + subscribeNtfyTopic)}`;
             document.getElementById('ntfy-qr').src = qrUrl;
             document.getElementById('ntfy-topic-text').textContent = subscribeNtfyTopic;
             document.getElementById('ntfy-open-btn').href = `ntfy://${subscribeNtfyTopic}`;
