@@ -1350,8 +1350,10 @@ async function handleUnsubPhone(text){
     if(res.ok){
       const sub=await res.json();
       state.unsubPhone=e164;
-      // Show subscription details, then ask for ntfy topic as confirmation
-      const resp = await callNova(`Found the user's subscription: Morning Train ${sub.morning_train}, Evening Train ${sub.evening_train}. Show these details clearly. Then explain that to confirm unsubscribe, they need to enter their ntfy topic code from their ntfy app — this is for security so only they can unsubscribe. Be warm but a little sad 😢. Keep it concise.`);
+      // Show train details directly — never let Claude narrate facts it might hallucinate
+      await novaSay(`Found your subscription:\n\n🌅 Morning train: ${sub.morning_train}\n🌆 Evening train: ${sub.evening_train}`);
+      // Claude handles only the conversational ask-for-topic part
+      const resp = await callNova(`The user wants to unsubscribe. We found their subscription and showed them their train numbers. Now ask them to enter their ntfy topic code from their ntfy app to confirm — explain it's so only they can unsubscribe. Be warm but a little sad about them leaving 😢. Keep it short.`);
       await novaSay(parseNovaResponse(resp).clean);
       state.step='unsub_topic';
       document.getElementById('userInput').placeholder='Your ntfy topic (njtransit-...)';
