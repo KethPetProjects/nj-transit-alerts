@@ -827,11 +827,12 @@
                         <div>🌅 Morning: <strong id="unsub-morning-train"></strong></div>
                         <div>🌆 Evening: <strong id="unsub-evening-train"></strong></div>
                     </div>
-                    <p style="font-size:0.9rem;margin-bottom:0.5rem">To confirm, enter your <strong>ntfy topic</strong> from your ntfy app:</p>
-                    <input type="text" id="unsub-topic-input" placeholder="njtransit-..."
-                           style="font-family:monospace;font-size:0.85rem;margin-bottom:0.75rem;text-align:left">
+                    <p style="font-size:0.9rem;margin-bottom:0.5rem">We sent a <strong>6-digit code</strong> to your ntfy app — check your notification:</p>
+                    <input type="text" id="unsub-code-input" placeholder="Enter 6-digit code"
+                           maxlength="6" inputmode="numeric"
+                           style="font-size:1.25rem;letter-spacing:0.4rem;text-align:center;margin-bottom:0.75rem">
                     <div style="display:flex;gap:0.75rem;justify-content:center">
-                        <button class="btn btn-secondary" onclick="confirmUnsubscribe()">Yes, unsubscribe</button>
+                        <button class="btn btn-secondary" onclick="confirmUnsubscribe()">Confirm unsubscribe</button>
                         <button class="btn" style="background:var(--surface);border:1px solid var(--border)" onclick="goBackToUnsubForm()">Cancel</button>
                     </div>
                     <p class="error-msg" id="unsub-verify-error"></p>
@@ -1300,9 +1301,14 @@
             btn.textContent = 'Looking up...';
             btn.disabled = true;
             try {
-                const res = await fetch(`${API_BASE}/subscription/${encodeURIComponent(unsubPhone)}`);
+                const res = await fetch(`${API_BASE}/unsubscribe/send-code`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ phone: unsubPhone })
+                });
                 if (!res.ok) {
-                    unsubError.textContent = 'No subscription found for that number.';
+                    const data = await res.json().catch(() => ({}));
+                    unsubError.textContent = data.detail || 'No subscription found for that number.';
                     unsubError.classList.add('show');
                     return;
                 }
@@ -1310,7 +1316,7 @@
                 document.getElementById('unsub-phone-display').textContent = phone;
                 document.getElementById('unsub-morning-train').textContent = `Train ${sub.morning_train}`;
                 document.getElementById('unsub-evening-train').textContent = `Train ${sub.evening_train}`;
-                document.getElementById('unsub-topic-input').value = '';
+                document.getElementById('unsub-code-input').value = '';
                 document.getElementById('unsubscribe-form').style.display = 'none';
                 document.getElementById('unsubscribe-confirm-box').classList.add('show');
             } catch (err) {
@@ -1325,9 +1331,9 @@
         async function confirmUnsubscribe() {
             const errorEl = document.getElementById('unsub-verify-error');
             errorEl.classList.remove('show');
-            const topic = document.getElementById('unsub-topic-input').value.trim();
-            if (!topic) {
-                errorEl.textContent = 'Please enter your ntfy topic — find it in your ntfy app.';
+            const code = document.getElementById('unsub-code-input').value.trim();
+            if (!code || code.length !== 6) {
+                errorEl.textContent = 'Please enter the 6-digit code from your ntfy notification.';
                 errorEl.classList.add('show');
                 return;
             }
@@ -1335,7 +1341,7 @@
                 const response = await fetch(`${API_BASE}/unsubscribe/verify`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ phone: unsubPhone, topic })
+                    body: JSON.stringify({ phone: unsubPhone, code })
                 });
                 if (!response.ok) {
                     const data = await response.json().catch(() => ({}));

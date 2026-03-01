@@ -1354,24 +1354,25 @@ async function handleUnsubPhone(text){
     if(res.ok){
       const sub=await res.json();
       state.unsubPhone=e164;
-      // Show train details directly — never let Claude narrate facts it might hallucinate
+      // Show train details directly, then send code via ntfy
       await novaSay(`Found your subscription:\n\n🌅 Morning train: ${sub.morning_train}\n🌆 Evening train: ${sub.evening_train}`);
-      // Claude handles only the conversational ask-for-topic part
-      const resp = await callNova(`The user wants to unsubscribe. We found their subscription and showed them their train numbers. Now ask them to enter their ntfy topic code from their ntfy app to confirm — explain it's so only they can unsubscribe. Be warm but a little sad about them leaving 😢. Keep it short.`);
+      // Send the verification code to their ntfy topic
+      await fetch(`${API_BASE}/unsubscribe/send-code`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({phone:e164})});
+      const resp = await callNova(`The user wants to unsubscribe. We found their subscription and just sent a 6-digit code to their ntfy app as a push notification. Tell them to check their ntfy notification for the code and enter it here to confirm. Be warm but a little sad about them leaving 😢. Keep it short.`);
       await novaSay(parseNovaResponse(resp).clean);
-      state.step='unsub_topic';
-      document.getElementById('userInput').placeholder='Your ntfy topic (njtransit-...)';
+      state.step='unsub_code';
+      document.getElementById('userInput').placeholder='6-digit code from ntfy';
     } else {
       await novaSay("No subscription found for that number. Sure you used the right one? 🤔");
     }
   }catch(e){ removeTyping(); await novaSay("Trouble connecting. Try again!"); }
 }
 
-async function handleUnsubTopic(text){
-  const topic=text.trim();
-  if(!topic.startsWith('njtransit-')){
+async function handleUnsubCode(text){
+  const code=text.replace(/\D/g,'');
+  if(code.length!==6){
     showTyping();
-    const r=await callNova(`User is confirming unsubscribe and needs to enter their ntfy topic code (it starts with "njtransit-"). They typed: "${topic}". If it doesn't look like a valid topic, explain where to find it — in the ntfy app under their NJ Transit alert subscription, or from the confirmation message they received when they subscribed. If it's a question, answer briefly then redirect. Keep it short.`);
+    const r=await callNova(`User is confirming unsubscribe with a 6-digit code sent to their ntfy app. They typed: "${text}" which isn't a valid 6-digit code. Ask them to check their ntfy notification for the code. If it's a question, answer briefly then redirect. Keep it short.`);
     removeTyping();
     await novaSay(parseNovaResponse(r).clean);
     return;
@@ -1380,7 +1381,7 @@ async function handleUnsubTopic(text){
   try{
     const res=await fetch(`${API_BASE}/unsubscribe/verify`,{
       method:'POST',headers:{'Content-Type':'application/json'},
-      body:JSON.stringify({phone:state.unsubPhone, topic})
+      body:JSON.stringify({phone:state.unsubPhone, code})
     });
     removeTyping();
     if(res.ok){
@@ -1391,7 +1392,7 @@ async function handleUnsubTopic(text){
     } else {
       const data=await res.json().catch(()=>({}));
       showTyping();
-      const r=await callNova(`Unsubscribe failed: ${data.detail||'Topic did not match'}. Tell the user kindly and ask them to re-enter their ntfy topic. Remind them where to find it. Keep it short.`);
+      const r=await callNova(`Unsubscribe failed: ${data.detail||'Invalid code'}. Tell the user kindly and ask them to check their ntfy notification and try again. Keep it short.`);
       removeTyping();
       await novaSay(parseNovaResponse(r).clean);
     }
@@ -1562,7 +1563,7 @@ function getStepBack(step){
     'phone': 'evening_train',
     'consent': 'phone',
     'confirm': 'phone',
-    'unsub_topic': 'unsub_phone',
+    'unsub_code': 'unsub_phone',
   };
   return backMap[step] || 'welcome';
 }
@@ -1634,7 +1635,7 @@ async function sendMessage(){
   addMessage('user', text);
 
   // Check for back/restart intent first — works from any step
-  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','phone','consent','confirm','unsub_phone','unsub_topic'];
+  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','phone','consent','confirm','unsub_phone','unsub_code'];
   if(isGoingBack(text) && backSteps.includes(state.step)){
     await goBack();
     return;
@@ -1700,7 +1701,7 @@ async function sendMessage(){
     case 'evening_time': await handleEveningTime(text); break;
     case 'phone': await handlePhone(text); break;
     case 'unsub_phone': await handleUnsubPhone(text); break;
-    case 'unsub_topic': await handleUnsubTopic(text); break;
+    case 'unsub_code': await handleUnsubCode(text); break;
     case 'check_phone': await handleCheckSub(text); break;
     default: {
       showTyping();
