@@ -1016,23 +1016,11 @@ function showTrainCards(trains, type){
       } else {
         state.eveningTrain = train;
         history.push({role:'user', content:`I selected Train ${train.id} at ${train.time} as my evening train.`});
-        const resp = await callNova(`I selected Train ${train.id} at ${train.time} as my evening train. Briefly ask how they'd like to receive alerts — free push notifications via ntfy app (no phone needed) or SMS text alerts.`);
+        const resp = await callNova(`I selected Train ${train.id} at ${train.time} as my evening train. Now ask for their phone number — it's used to identify their subscription and makes it easy to manage or unsubscribe later. Keep it brief.`);
         const parsed = parseNovaResponse(resp);
         await novaSay(parsed.clean);
-        state.step = 'alert_method';
-        showChips([
-          {name: '🔔 Push notifications (free, no phone)', code: 'ntfy'},
-          {name: '📱 SMS text alerts', code: 'sms'}
-        ], async opt => {
-          addMessage('user', opt.name);
-          if (opt.code === 'ntfy') {
-            await continueAfterConsent();
-          } else {
-            await novaSay("Got it! What's your 10-digit phone number?");
-            state.step = 'phone';
-            document.getElementById('userInput').placeholder = 'Your 10-digit phone number';
-          }
-        });
+        state.step = 'phone';
+        document.getElementById('userInput').placeholder = 'Your 10-digit phone number';
       }
     };
     wrapper.appendChild(card);
@@ -1220,6 +1208,7 @@ async function doSubscribe(){
       ontime_alerts: true,
       station: state.station || ''
     };
+    if (!state.phone) { removeTyping(); await novaSay("I need your phone number first! What is it?"); state.step='phone'; return; }
     body.phone = '+1' + state.phone.replace(/\D/g, '');
     const res=await fetch(`${API_BASE}/subscribe`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
     removeTyping();
@@ -1549,8 +1538,7 @@ function getStepBack(step){
     'morning_train': 'morning_time',
     'evening_time': 'morning_train',
     'evening_train': 'evening_time',
-    'alert_method': 'evening_train',
-    'phone': 'alert_method',
+    'phone': 'evening_train',
     'consent': 'phone',
     'confirm': 'phone',
   };
@@ -1618,7 +1606,7 @@ async function sendMessage(){
   addMessage('user', text);
 
   // Check for back/restart intent first — works from any step
-  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','alert_method','phone','consent','confirm'];
+  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','phone','consent','confirm'];
   if(isGoingBack(text) && backSteps.includes(state.step)){
     await goBack();
     return;
@@ -1635,7 +1623,7 @@ async function sendMessage(){
     await novaSay("Tap one of the train cards above to pick your evening train! 👆");
     return;
   }
-  if(state.step==='confirm' || state.step==='unsub_confirm' || state.step==='alert_method' || state.step==='schedule'){
+  if(state.step==='confirm' || state.step==='unsub_confirm' || state.step==='schedule'){
     await novaSay("Tap one of the buttons above to confirm! 👆");
     return;
   }
