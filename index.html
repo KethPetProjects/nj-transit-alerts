@@ -1233,7 +1233,7 @@
 
             // Always show ntfy setup box (new users get full setup, returning get brief confirmation)
             document.getElementById('ntfy-topic-text').textContent = subscribeNtfyTopic;
-            document.getElementById('ntfy-open-btn').href = `ntfy://${subscribeNtfyTopic}`;
+            document.getElementById('ntfy-open-btn').href = `ntfy://ntfy.sh/${subscribeNtfyTopic}`;
             document.getElementById('ntfy-manage-link').href = manageUrl;
             document.getElementById('ntfy-setup-box').classList.add('show');
 

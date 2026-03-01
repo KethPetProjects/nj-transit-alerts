@@ -1258,7 +1258,7 @@ async function showNtfySuccess(){
     <div class="summary-header">🔔 YOUR PUSH ALERT TOPIC</div>
     <div style="font-family:monospace;font-size:0.85rem;background:rgba(0,0,0,0.3);padding:0.5rem 0.75rem;border-radius:6px;word-break:break-all;margin:0.5rem 0">${topic}</div>
     <div style="display:flex;gap:0.5rem;margin:0.5rem 0">
-      <a href="ntfy://${topic}" style="flex:1;text-align:center;padding:0.4rem;background:var(--accent);color:#fff;border-radius:6px;text-decoration:none;font-size:0.8rem">📱 Open in ntfy</a>
+      <a href="ntfy://ntfy.sh/${topic}" style="flex:1;text-align:center;padding:0.4rem;background:var(--accent);color:#fff;border-radius:6px;text-decoration:none;font-size:0.8rem">📱 Open in ntfy</a>
       <button onclick="shareNovaTopic('${topic}')" style="flex:1;padding:0.4rem;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;cursor:pointer;font-size:0.8rem">↗ Share topic</button>
     </div>
     <div style="font-size:0.75rem;opacity:0.75">Keep your topic private — it's your personal alert channel.</div>
@@ -1306,7 +1306,7 @@ async function handleVerify(text){
           <div class="summary-header">🔔 ALSO GET PUSH NOTIFICATIONS</div>
           <div style="font-family:monospace;font-size:0.8rem;background:rgba(0,0,0,0.3);padding:0.4rem 0.75rem;border-radius:6px;word-break:break-all;margin:0.4rem 0">${topic}</div>
           <div style="display:flex;gap:0.5rem;margin:0.4rem 0">
-            <a href="ntfy://${topic}" style="flex:1;text-align:center;padding:0.4rem;background:var(--accent);color:#fff;border-radius:6px;text-decoration:none;font-size:0.75rem">📱 Open in ntfy</a>
+            <a href="ntfy://ntfy.sh/${topic}" style="flex:1;text-align:center;padding:0.4rem;background:var(--accent);color:#fff;border-radius:6px;text-decoration:none;font-size:0.75rem">📱 Open in ntfy</a>
             <button onclick="shareNovaTopic('${topic}')" style="flex:1;padding:0.4rem;background:transparent;border:1px solid var(--accent);color:var(--accent);border-radius:6px;cursor:pointer;font-size:0.75rem">↗ Share topic</button>
           </div>
           <a href="${manageUrl}" target="_blank" style="display:block;margin-top:0.4rem;color:var(--accent2);font-size:0.8rem">⚙️ Manage →</a>`;
