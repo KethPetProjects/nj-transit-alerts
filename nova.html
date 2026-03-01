@@ -1125,7 +1125,10 @@ async function handleEveningTime(text){
 async function handlePhone(text){
   const digits=text.replace(/\D/g,'');
   if(digits.length!==10){
-    await novaSay("That doesn't look like a valid 10-digit number. Try again? (e.g. 973-555-1234)");
+    showTyping();
+    const r = await callNova(`The user is at the phone number step. I need their 10-digit US mobile number to send train delay alerts. They typed: "${text}". If it's a question about the app or trains, answer briefly then ask for their number again. If it's off-topic, be playfully witty and steer them back to entering their number. If it looks like a partial or wrongly formatted number, gently explain the format (e.g. 973-555-1234 or 9735551234). Keep it natural and concise.`);
+    removeTyping();
+    await novaSay(parseNovaResponse(r).clean);
     return;
   }
   state.phone=text;
@@ -1614,19 +1617,29 @@ async function sendMessage(){
     return;
   }
 
-  // Steps that need card taps
+  // Steps that need card taps — but still let Nova answer questions/off-topic gracefully
   if(state.step==='morning_train'){
-    await novaSay("Tap one of the train cards above to pick your morning train! 👆");
+    showTyping();
+    const r = await callNova(`The user is choosing their morning train from ${state.stationName}. Train cards are shown above — they need to TAP one to select it. They typed: "${text}". If they're asking a question about trains or commuting, answer it briefly then redirect them to tap a card. If it's totally off-topic, be witty and playfully redirect them back. If they mention a time (like "8am"), let them know they can type a time to re-filter the cards. Keep it short.`);
+    removeTyping();
+    await novaSay(parseNovaResponse(r).clean);
     return;
   }
   if(state.step==='evening_train'){
-    // Maybe they're specifying a time — re-filter
+    // If they typed a time, re-filter the cards
     if(/\d/.test(text)){ await handleEveningTime(text); return; }
-    await novaSay("Tap one of the train cards above to pick your evening train! 👆");
+    showTyping();
+    const r = await callNova(`The user is choosing their evening train back from NYC to ${state.stationName}. Train cards are shown above — they need to TAP one to select it. They typed: "${text}". If they're asking a question about trains or commuting, answer it briefly then redirect them to tap a card. If it's totally off-topic, be witty and playfully redirect them back. If they mention a time (like "6pm"), let them know they can type a time to re-filter the cards. Keep it short.`);
+    removeTyping();
+    await novaSay(parseNovaResponse(r).clean);
     return;
   }
   if(state.step==='confirm' || state.step==='unsub_confirm' || state.step==='schedule'){
-    await novaSay("Tap one of the buttons above to confirm! 👆");
+    const stepDesc = state.step==='schedule' ? 'picking a schedule type (weekday/saturday/sunday)' : state.step==='confirm' ? 'confirming their subscription details' : 'confirming they want to unsubscribe';
+    showTyping();
+    const r = await callNova(`The user is at the step of ${stepDesc} and should tap one of the buttons shown above. They typed: "${text}". If it's a question, answer it briefly then redirect to the buttons. If it's off-topic, be witty and redirect. Keep it very short.`);
+    removeTyping();
+    await novaSay(parseNovaResponse(r).clean);
     return;
   }
 
