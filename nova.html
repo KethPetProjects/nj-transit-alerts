@@ -899,7 +899,7 @@ Line codes: NE=Northeast Corridor, NC=North Jersey Coast, RV=Raritan Valley, ME=
 Station codes for NE: TR=Trenton, HL=Hamilton, PJ=Princeton Junction, NB=New Brunswick, ED=Edison, MU=Metuchen, MP=Metropark, RH=Rahway, LI=Linden, EZ=Elizabeth, NP=Newark Penn
 
 NTFY APP SETUP (answer questions about this confidently):
-ntfy is a free, open-source push notification app. NJ Transit Alerts uses it to send you real-time train alerts without needing your phone number.
+ntfy is a free, open-source push notification app. NJ Transit Alerts uses it to send you real-time train alerts. Your phone number is used as your account ID so you can manage or cancel later — no SMS messages are ever sent to it.
 
 How to set up ntfy after subscribing:
 1. Install the ntfy app — iPhone: search "ntfy" on App Store, Android: search "ntfy" on Play Store (by Philipp Heckel)
@@ -1298,7 +1298,7 @@ async function handleVerify(text){
       statsEl.className = 'stats-card';
       statsEl.innerHTML = `
         <div class="stat-box"><div class="stat-num">98%</div><div class="stat-label">NEC On-Time Rate*</div></div>
-        <div class="stat-box"><div class="stat-num">5min</div><div class="stat-label">Check Interval</div></div>
+        <div class="stat-box"><div class="stat-num">2min</div><div class="stat-label">Check Interval</div></div>
         <div class="stat-box"><div class="stat-num">24/7</div><div class="stat-label">Monitoring</div></div>
         <div class="stat-box"><div class="stat-num">∞</div><div class="stat-label">Patience Needed</div></div>`;
       const resp = await callNova("User is now successfully subscribed for push notifications! Give a fun congratulations message. Keep it short and witty. Maybe joke about NJ Transit delays.");
@@ -1459,7 +1459,7 @@ async function handlePostChip(opt){
       await novaSay('Opening the main app! 🚂');
       return;
     case 'howto':
-      await novaSay("Ramiya checks your trains every 5 minutes. If there's a delay or cancellation, you get a push notification instantly via the ntfy app. On-time? You get a heads-up 30 minutes before departure. ⏱️");
+      await novaSay("Ramiya checks your trains every 2 minutes. If there's a delay or cancellation, you get a push notification via the ntfy app. On-time? You get a heads-up 30 minutes before departure. ⏱️");
       break;
     case 'ntfy_help':
       await handleNtfyHelp();
