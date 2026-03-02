@@ -866,7 +866,7 @@ function getWeatherContext(){
 }
 
 // ── Claude Haiku AI ────────────────────────────────────────
-const SYSTEM_PROMPT = `You are Ramiya, a witty and helpful NJ Transit AI assistant. You help commuters subscribe to train delay alerts via SMS.
+const SYSTEM_PROMPT = `You are Ramiya, a witty and helpful NJ Transit AI assistant. You help commuters subscribe to train delay alerts via push notifications (ntfy app).
 
 Your personality:
 - Friendly, slightly sarcastic about NJ Transit delays (they're legendary)
@@ -1144,14 +1144,14 @@ function showConsentCard(){
   card.className = 'consent-card';
   card.id = 'consent-card';
   card.innerHTML = `
-    <div>By subscribing, <strong>NJ Transit Delay Alerts</strong> will send you recurring automated SMS alerts for your selected trains. Message frequency varies. <strong>Msg & data rates may apply.</strong> Reply <strong>STOP</strong> to unsubscribe anytime. Reply <strong>HELP</strong> for help.</div>
+    <div>By subscribing, <strong>NJ Transit Delay Alerts</strong> will send you push notifications for your selected trains via the free <strong>ntfy</strong> app. No SMS charges. You can unsubscribe anytime from the app or our website.</div>
     <div style="margin-top:0.5rem;font-size:0.75rem;">
-      <a href="privacy.html" target="_blank" style="color:var(--accent2)">Privacy Policy</a> · 
+      <a href="privacy.html" target="_blank" style="color:var(--accent2)">Privacy Policy</a> ·
       <a href="terms.html" target="_blank" style="color:var(--accent2)">Terms & Conditions</a>
     </div>
     <div class="consent-checkbox-row">
       <input type="checkbox" id="nova-consent-check" onchange="document.getElementById('nova-consent-btn').disabled=!this.checked">
-      <label for="nova-consent-check">I agree to receive SMS train delay alerts from NJ Transit Delay Alerts. I understand message & data rates may apply and I can reply STOP at any time to unsubscribe.</label>
+      <label for="nova-consent-check">I agree to receive push notification train delay alerts from NJ Transit Delay Alerts. I can unsubscribe anytime from the manage page or ntfy app.</label>
     </div>
     <button class="consent-submit-btn" id="nova-consent-btn" disabled onclick="handleConsentAgree()">✓ I Agree — Activate Alerts</button>
   `;
@@ -1161,7 +1161,7 @@ function showConsentCard(){
 
 async function handleConsentAgree(){
   document.getElementById('consent-card')?.remove();
-  addMessage('user', '✓ I agree to receive SMS alerts');
+  addMessage('user', '✓ I agree to receive push notification alerts');
   await continueAfterConsent();
 }
 
@@ -1301,7 +1301,7 @@ async function handleVerify(text){
         <div class="stat-box"><div class="stat-num">5min</div><div class="stat-label">Check Interval</div></div>
         <div class="stat-box"><div class="stat-num">24/7</div><div class="stat-label">Monitoring</div></div>
         <div class="stat-box"><div class="stat-num">∞</div><div class="stat-label">Patience Needed</div></div>`;
-      const resp = await callNova("User is now successfully subscribed via SMS! Give a fun congratulations message. Keep it short and witty. Maybe joke about NJ Transit delays.");
+      const resp = await callNova("User is now successfully subscribed for push notifications! Give a fun congratulations message. Keep it short and witty. Maybe joke about NJ Transit delays.");
       await novaSay(parseNovaResponse(resp).clean, statsEl);
       // Also show ntfy push notification topic
       if (state.ntfy_topic) {
@@ -1459,7 +1459,7 @@ async function handlePostChip(opt){
       await novaSay('Opening the main app! 🚂');
       return;
     case 'howto':
-      await novaSay("Ramiya checks your trains every 5 minutes. If there's a delay over 5 minutes or a cancellation, you get an SMS instantly. On-time? You get a heads-up 30 minutes before departure. ⏱️");
+      await novaSay("Ramiya checks your trains every 5 minutes. If there's a delay or cancellation, you get a push notification instantly via the ntfy app. On-time? You get a heads-up 30 minutes before departure. ⏱️");
       break;
     case 'ntfy_help':
       await handleNtfyHelp();
