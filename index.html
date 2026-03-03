@@ -548,6 +548,76 @@
         .verify-resend { color: var(--primary); font-weight: 600; }
         .verify-resend:hover { text-decoration: underline; }
         .verify-resend:disabled { color: var(--text-light); cursor: default; }
+        /* ── Train Picker ── */
+        .train-picker {
+            border: 2px solid var(--border);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: border-color 0.2s;
+            background: var(--white);
+        }
+        .train-picker.has-selection {
+            border-color: var(--primary);
+        }
+        .train-picker-placeholder {
+            padding: 0.875rem 1rem;
+            color: var(--text-light);
+            font-size: 1rem;
+        }
+        .train-rows {
+            max-height: 264px;
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+        .train-row {
+            display: flex;
+            align-items: center;
+            gap: 0.6rem;
+            padding: 0.65rem 0.875rem;
+            cursor: pointer;
+            transition: background 0.12s;
+            user-select: none;
+            -webkit-tap-highlight-color: transparent;
+            border-top: 1px solid var(--border);
+        }
+        .train-row:first-child { border-top: none; }
+        .train-row:active { background: rgba(229,57,53,0.05); }
+        .train-row.selected { background: rgba(229,57,53,0.06); }
+        .tr-badge {
+            width: 22px; height: 22px;
+            border-radius: 50%;
+            border: 2px solid var(--border);
+            display: flex; align-items: center; justify-content: center;
+            font-size: 0.68rem; font-weight: 700;
+            flex-shrink: 0;
+            color: transparent;
+            transition: all 0.12s;
+        }
+        .train-row.selected .tr-badge {
+            background: var(--primary);
+            border-color: var(--primary);
+            color: white;
+        }
+        .tr-num {
+            font-weight: 700; font-size: 0.92rem;
+            min-width: 46px; color: var(--text);
+        }
+        .tr-time {
+            font-size: 0.9rem; color: var(--text);
+            min-width: 72px;
+        }
+        .tr-dest {
+            font-size: 0.8rem; color: var(--text-light);
+            flex: 1; white-space: nowrap;
+            overflow: hidden; text-overflow: ellipsis;
+        }
+        .train-picker-hint {
+            padding: 0.35rem 0.875rem;
+            font-size: 0.75rem; color: var(--text-light);
+            background: var(--bg);
+            border-top: 1px solid var(--border);
+            text-align: center;
+        }
     </style>
 </head>
 <body>
@@ -627,39 +697,19 @@
                     <!-- Train to NYC -->
                     <div class="form-group">
                         <label>Train to NYC/Newark <span class="required">*</span></label>
-                        <select id="morning-train-1" required disabled>
-                            <option value="">Select station first...</option>
-                        </select>
-                        <div id="morning-train-2-row" style="display:none;margin-top:0.4rem">
-                            <select id="morning-train-2">
-                                <option value="">+ Add backup train (optional)</option>
-                            </select>
+                        <div class="train-picker" id="morning-train-picker">
+                            <div class="train-picker-placeholder">Select station first...</div>
                         </div>
-                        <div id="morning-train-3-row" style="display:none;margin-top:0.4rem">
-                            <select id="morning-train-3">
-                                <option value="">+ Add 2nd backup train (optional)</option>
-                            </select>
-                        </div>
-                        <p class="help-text">Select up to 3 trains — #1 is primary, #2 & #3 are backups</p>
+                        <p class="help-text">Tap to select up to 3 — #1 is primary, #2 & #3 are backups</p>
                     </div>
 
                     <!-- Train from NYC -->
                     <div class="form-group">
                         <label>Train from NYC/Newark <span class="required">*</span></label>
-                        <select id="evening-train-1" required disabled>
-                            <option value="">Select station first...</option>
-                        </select>
-                        <div id="evening-train-2-row" style="display:none;margin-top:0.4rem">
-                            <select id="evening-train-2">
-                                <option value="">+ Add backup train (optional)</option>
-                            </select>
+                        <div class="train-picker" id="evening-train-picker">
+                            <div class="train-picker-placeholder">Select station first...</div>
                         </div>
-                        <div id="evening-train-3-row" style="display:none;margin-top:0.4rem">
-                            <select id="evening-train-3">
-                                <option value="">+ Add 2nd backup train (optional)</option>
-                            </select>
-                        </div>
-                        <p class="help-text">Select up to 3 trains — #1 is primary, #2 & #3 are backups</p>
+                        <p class="help-text">Tap to select up to 3 — #1 is primary, #2 & #3 are backups</p>
                     </div>
 
                     <!-- Phone Number (required) -->
@@ -929,8 +979,7 @@
             } else {
                 stationSelect.disabled = true;
                 stationSelect.innerHTML = '<option value="">Select your line first...</option>';
-                document.getElementById('morning-train-1').disabled = true;
-                document.getElementById('evening-train-1').disabled = true;
+                _resetPickers('Select station first...');
                 document.getElementById('schedule-group').style.display = 'none';
             }
         });
@@ -943,8 +992,7 @@
             if (station && line) {
                 await loadTrains(station, line);
             } else {
-                document.getElementById('morning-train-1').disabled = true;
-                document.getElementById('evening-train-1').disabled = true;
+                _resetPickers('Select station first...');
             }
         });
 
@@ -959,6 +1007,7 @@
         // Track selected schedule globally so toggle can re-fetch
         let _currentStation = null, _currentLine = null;
         let _selectedSchedule = getTodaySchedule();
+        let _selectedTrains = { morning: [], evening: [] };
 
         // Set the correct active button on load
         document.querySelectorAll('.schedule-btn').forEach(btn => {
@@ -971,20 +1020,66 @@
             });
         });
 
-        function _populateSelect(sel, trainList, firstOpt, errMsg) {
-            if (trainList.length > 0) {
-                sel.innerHTML = `<option value="">${firstOpt}</option>`;
-                trainList.forEach(train => {
-                    const opt = document.createElement('option');
-                    opt.value = train.id;
-                    opt.textContent = `${train.id} - ${train.time} to ${train.destination}`;
-                    opt.dataset.time = train.time;
-                    opt.dataset.destination = train.destination;
-                    sel.appendChild(opt);
-                });
-            } else {
-                sel.innerHTML = `<option value="">${errMsg}</option>`;
+        function _resetPickers(msg) {
+            _selectedTrains = { morning: [], evening: [] };
+            document.getElementById('morning-train-picker').innerHTML = `<div class="train-picker-placeholder">${msg}</div>`;
+            document.getElementById('evening-train-picker').innerHTML = `<div class="train-picker-placeholder">${msg}</div>`;
+            document.getElementById('morning-train-picker').classList.remove('has-selection');
+            document.getElementById('evening-train-picker').classList.remove('has-selection');
+        }
+
+        function _renderTrainPicker(trains, type) {
+            const picker = document.getElementById(`${type}-train-picker`);
+            _selectedTrains[type] = [];
+            picker.classList.remove('has-selection');
+
+            if (!trains || trains.length === 0) {
+                picker.innerHTML = '<div class="train-picker-placeholder">No trains found for this line</div>';
+                return;
             }
+
+            const rowsDiv = document.createElement('div');
+            rowsDiv.className = 'train-rows';
+
+            trains.forEach(train => {
+                const row = document.createElement('div');
+                row.className = 'train-row';
+                row.dataset.trainId = train.id;
+                const dest = train.destination || (type === 'morning' ? 'NY Penn' : 'Home');
+                row.innerHTML = `<span class="tr-badge"></span><span class="tr-num">#${train.id}</span><span class="tr-time">${train.time}</span><span class="tr-dest">→ ${dest}</span>`;
+                row.addEventListener('click', () => {
+                    const idx = _selectedTrains[type].findIndex(t => t.id === train.id);
+                    if (idx !== -1) {
+                        _selectedTrains[type].splice(idx, 1);
+                    } else {
+                        if (_selectedTrains[type].length >= 3) return;
+                        _selectedTrains[type].push(train);
+                    }
+                    // Rebuild all selected states + badges from scratch
+                    picker.querySelectorAll('.train-row').forEach(r => {
+                        r.classList.remove('selected');
+                        r.querySelector('.tr-badge').textContent = '';
+                    });
+                    _selectedTrains[type].forEach((t, i) => {
+                        picker.querySelectorAll('.train-row').forEach(r => {
+                            if (r.dataset.trainId === t.id) {
+                                r.classList.add('selected');
+                                r.querySelector('.tr-badge').textContent = i + 1;
+                            }
+                        });
+                    });
+                    picker.classList.toggle('has-selection', _selectedTrains[type].length > 0);
+                });
+                rowsDiv.appendChild(row);
+            });
+
+            const hint = document.createElement('div');
+            hint.className = 'train-picker-hint';
+            hint.textContent = 'Tap to select up to 3 — #1 is your primary train';
+
+            picker.innerHTML = '';
+            picker.appendChild(rowsDiv);
+            picker.appendChild(hint);
         }
 
         async function loadTrains(stationCode, lineCode, schedule) {
@@ -992,29 +1087,7 @@
             _currentLine = lineCode;
             if (!schedule) schedule = _selectedSchedule;
 
-            const m1 = document.getElementById('morning-train-1');
-            const m2 = document.getElementById('morning-train-2');
-            const m3 = document.getElementById('morning-train-3');
-            const e1 = document.getElementById('evening-train-1');
-            const e2 = document.getElementById('evening-train-2');
-            const e3 = document.getElementById('evening-train-3');
-
-            m1.disabled = false;
-            e1.disabled = false;
-            m1.innerHTML = '<option value="">Loading trains...</option>';
-            e1.innerHTML = '<option value="">Loading trains...</option>';
-
-            // Reset backup rows on station/schedule change
-            document.getElementById('morning-train-2-row').style.display = 'none';
-            document.getElementById('morning-train-3-row').style.display = 'none';
-            document.getElementById('evening-train-2-row').style.display = 'none';
-            document.getElementById('evening-train-3-row').style.display = 'none';
-            m2.innerHTML = '<option value="">+ Add backup train (optional)</option>';
-            m3.innerHTML = '<option value="">+ Add 2nd backup train (optional)</option>';
-            e2.innerHTML = '<option value="">+ Add backup train (optional)</option>';
-            e3.innerHTML = '<option value="">+ Add 2nd backup train (optional)</option>';
-
-            // Show schedule selector now that a station is chosen
+            _resetPickers('Loading trains...');
             document.getElementById('schedule-group').style.display = '';
 
             try {
@@ -1025,34 +1098,17 @@
                 const filterByLine = (trainList) => {
                     if (!trainList || trainList.length === 0) return [];
                     const keywords = getLineKeywords(lineCode);
-                    const filtered = trainList.filter(train => {
-                        const trainLine = (train.line || '').toLowerCase();
-                        return keywords.some(kw => trainLine.includes(kw));
-                    });
+                    const filtered = trainList.filter(train => keywords.some(kw => (train.line || '').toLowerCase().includes(kw)));
                     return filtered.length > 0 ? filtered : trainList;
                 };
 
                 console.log('API response:', JSON.stringify(trains).slice(0, 300));
-                const outbound = filterByLine(trains.outbound || []);
-                const inbound  = filterByLine(trains.inbound  || []);
-
-                _populateSelect(m1, outbound, 'Select train to NYC...',    'No trains found for this line');
-                _populateSelect(m2, outbound, '+ Add backup train (optional)', 'No trains found for this line');
-                _populateSelect(m3, outbound, '+ Add 2nd backup train (optional)', 'No trains found for this line');
-                _populateSelect(e1, inbound,  'Select train from NYC...', 'No trains found for this line');
-                _populateSelect(e2, inbound,  '+ Add backup train (optional)', 'No trains found for this line');
-                _populateSelect(e3, inbound,  '+ Add 2nd backup train (optional)', 'No trains found for this line');
-
-                // Progressive reveal — show next backup row when a train is selected
-                m1.onchange = () => { if (m1.value) document.getElementById('morning-train-2-row').style.display = ''; };
-                m2.onchange = () => { if (m2.value) document.getElementById('morning-train-3-row').style.display = ''; };
-                e1.onchange = () => { if (e1.value) document.getElementById('evening-train-2-row').style.display = ''; };
-                e2.onchange = () => { if (e2.value) document.getElementById('evening-train-3-row').style.display = ''; };
+                _renderTrainPicker(filterByLine(trains.outbound || []), 'morning');
+                _renderTrainPicker(filterByLine(trains.inbound  || []), 'evening');
 
             } catch (error) {
                 console.error('Error loading trains:', error);
-                m1.innerHTML = '<option value="">Error loading trains - try again</option>';
-                e1.innerHTML = '<option value="">Error loading trains - try again</option>';
+                _resetPickers('Error loading trains — try again');
             }
         }
         
@@ -1197,26 +1253,20 @@
             const stationName = document.getElementById('home-station').selectedOptions[0].dataset.name;
             const lineCode = document.getElementById('train-line').value;
             const lineName = document.getElementById('train-line').selectedOptions[0].textContent;
-            const morningTrain1 = document.getElementById('morning-train-1').value;
-            const morningTrain2 = document.getElementById('morning-train-2').value;
-            const morningTrain3 = document.getElementById('morning-train-3').value;
-            const eveningTrain1 = document.getElementById('evening-train-1').value;
-            const eveningTrain2 = document.getElementById('evening-train-2').value;
-            const eveningTrain3 = document.getElementById('evening-train-3').value;
-            const morningTrains = [morningTrain1, morningTrain2, morningTrain3].filter(Boolean);
-            const eveningTrains = [eveningTrain1, eveningTrain2, eveningTrain3].filter(Boolean);
+            const morningTrains = _selectedTrains.morning.map(t => t.id);
+            const eveningTrains = _selectedTrains.evening.map(t => t.id);
             const phone = document.getElementById('phone').value;
             const delayAlerts = document.getElementById('delay-alerts').checked;
             const ontimeAlerts = document.getElementById('ontime-alerts').checked;
 
             const errorEl = document.getElementById('subscribe-error');
             const digits = phone.replace(/\D/g, '');
-            if (!stationCode || !lineCode || !morningTrain1 || !eveningTrain1 || !phone.trim()) {
+            if (!stationCode || !lineCode || morningTrains.length === 0 || eveningTrains.length === 0 || !phone.trim()) {
                 let missing = [];
                 if (!lineCode) missing.push('train line');
                 if (!stationCode) missing.push('home station');
-                if (!morningTrain1) missing.push('train to NYC');
-                if (!eveningTrain1) missing.push('train from NYC');
+                if (morningTrains.length === 0) missing.push('train to NYC');
+                if (eveningTrains.length === 0) missing.push('train from NYC');
                 if (!phone.trim()) missing.push('phone number');
                 errorEl.textContent = 'Please fill in: ' + missing.join(', ');
                 errorEl.classList.add('show');
@@ -1301,8 +1351,8 @@
             sessionStorage.setItem('subscription', JSON.stringify({
                 station: stationName,
                 line: lineName,
-                morning: document.getElementById('morning-train-1').selectedOptions[0].textContent,
-                evening: document.getElementById('evening-train-1').selectedOptions[0].textContent,
+                morning: morningTrains.map((id, i) => i === 0 ? `#${id}` : `+ #${id}`).join(', '),
+                evening: eveningTrains.map((id, i) => i === 0 ? `#${id}` : `+ #${id}`).join(', '),
                 phone: subscribePhone,
                 ntfy_topic: subscribeNtfyTopic,
                 manage_url: manageUrl
