@@ -1348,8 +1348,9 @@
                 }
                 const sub = await res.json();
                 document.getElementById('unsub-phone-display').textContent = phone;
-                document.getElementById('unsub-morning-train').textContent = `Train ${sub.morning_train}`;
-                document.getElementById('unsub-evening-train').textContent = `Train ${sub.evening_train}`;
+                const fmtT = (arr, s) => { const l=(arr&&arr.length)?arr:(s?[s]:[]); return l.map((t,i)=>i===0?`#${t}`:`+ #${t}`).join(', ')||'—'; };
+                document.getElementById('unsub-morning-train').textContent = fmtT(sub.morning_trains, sub.morning_train);
+                document.getElementById('unsub-evening-train').textContent = fmtT(sub.evening_trains, sub.evening_train);
                 document.getElementById('unsub-code-input').value = '';
                 document.getElementById('unsubscribe-form').style.display = 'none';
                 document.getElementById('unsubscribe-confirm-box').classList.add('show');
