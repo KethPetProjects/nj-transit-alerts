@@ -757,7 +757,8 @@ let state = {
   step: 'welcome',
   line: null, lineName: null,
   station: null, stationName: null,
-  morningTrain: null, eveningTrain: null,
+  morningTrain: null, eveningTrain: null,   // first selected (backward compat)
+  morningTrains: [], eveningTrains: [],      // ordered list, up to 3
   phone: null, ntfy_topic: null, schedule: 'weekday', allInbound: [],
   unsubPhone: null,
   weather: null,
@@ -992,41 +993,98 @@ async function loadAllTrains(){
 function showTrainCards(trains, type){
   const wrapper = document.createElement('div');
   wrapper.className = 'train-cards';
+
   const dirLabel = document.createElement('div');
-  dirLabel.style.cssText = 'font-size:0.7rem;color:var(--text-dim);margin-bottom:0.4rem;letter-spacing:0.05em;text-transform:uppercase;';
+  dirLabel.style.cssText = 'font-size:0.7rem;color:var(--text-dim);margin-bottom:0.25rem;letter-spacing:0.05em;text-transform:uppercase;';
   dirLabel.textContent = type === 'morning' ? '↑ Toward New York Penn' : '↓ From New York Penn';
   wrapper.appendChild(dirLabel);
+
+  const hintLabel = document.createElement('div');
+  hintLabel.style.cssText = 'font-size:0.72rem;color:var(--text-dim);margin-bottom:0.5rem;opacity:0.8;';
+  hintLabel.textContent = 'Tap to select up to 3 trains — #1 is your primary';
+  wrapper.appendChild(hintLabel);
+
+  const selectedTrains = [];
+
+  // Continue button — shown after first selection
+  const continueBtn = document.createElement('button');
+  continueBtn.style.cssText = 'display:none;margin-top:0.6rem;padding:0.55rem 1rem;background:var(--accent);color:#fff;border:none;border-radius:8px;font-size:0.9rem;cursor:pointer;width:100%;font-weight:600;';
+  continueBtn.textContent = 'Continue →';
+
+  function updateBadges(){
+    wrapper.querySelectorAll('.sel-badge').forEach(b=>b.remove());
+    selectedTrains.forEach((t, i) => {
+      wrapper.querySelectorAll('.train-card').forEach(c => {
+        if(c.dataset.trainId === t.id){
+          const badge = document.createElement('span');
+          badge.className = 'sel-badge';
+          badge.style.cssText = 'position:absolute;top:-7px;right:-7px;background:var(--accent);color:#fff;border-radius:50%;width:18px;height:18px;display:flex;align-items:center;justify-content:center;font-size:0.65rem;font-weight:700;line-height:1;z-index:1;';
+          badge.textContent = i + 1;
+          c.appendChild(badge);
+        }
+      });
+    });
+  }
+
   trains.forEach(train => {
     const card = document.createElement('div');
     card.className = 'train-card';
+    card.dataset.trainId = train.id;
+    card.style.position = 'relative';
     const dest = type === 'morning' ? (train.destination || 'New York Penn') : `to ${state.stationName || train.destination}`;
     card.innerHTML = `<span class="train-num">#${train.id}</span><span class="train-time">${train.time}</span><span class="train-dest">${dest}</span>`;
-    card.onclick = async () => {
-      wrapper.querySelectorAll('.train-card').forEach(c=>{c.classList.add('disabled');c.classList.remove('selected')});
-      card.classList.add('selected'); card.classList.remove('disabled');
-      addMessage('user', `Train ${train.id} at ${train.time}`);
-      if(type==='morning'){
-        state.morningTrain = train;
-        history.push({role:'user', content:`I selected Train ${train.id} at ${train.time} as my morning train.`});
-        const resp = await callNova(`I selected Train ${train.id} at ${train.time} as my morning train. Now ask me what time I leave work in the evening.`);
-        const parsed = parseNovaResponse(resp);
-        await novaSay(parsed.clean);
-        state.step = 'evening_time';
-        document.getElementById('userInput').placeholder = 'e.g. 5:30 PM or 6 PM';
+    card.onclick = () => {
+      const idx = selectedTrains.findIndex(t => t.id === train.id);
+      if(idx !== -1){
+        selectedTrains.splice(idx, 1);
+        card.classList.remove('selected');
       } else {
-        state.eveningTrain = train;
-        history.push({role:'user', content:`I selected Train ${train.id} at ${train.time} as my evening train.`});
-        const resp = await callNova(`I selected Train ${train.id} at ${train.time} as my evening train. Now ask for their phone number — it's used to identify their subscription and makes it easy to manage or unsubscribe later. Keep it brief.`);
-        const parsed = parseNovaResponse(resp);
-        await novaSay(parsed.clean);
-        state.step = 'phone';
-        document.getElementById('userInput').placeholder = 'Your 10-digit phone number';
+        if(selectedTrains.length >= 3) return;
+        selectedTrains.push(train);
+        card.classList.add('selected');
       }
+      updateBadges();
+      continueBtn.style.display = selectedTrains.length > 0 ? '' : 'none';
+      continueBtn.textContent = selectedTrains.length === 1
+        ? 'Continue with 1 train →'
+        : `Continue with ${selectedTrains.length} trains →`;
     };
     wrapper.appendChild(card);
   });
+
+  wrapper.appendChild(continueBtn);
   chat.appendChild(wrapper);
   chat.scrollTop = chat.scrollHeight;
+
+  continueBtn.onclick = async () => {
+    if(selectedTrains.length === 0) return;
+    wrapper.querySelectorAll('.train-card').forEach(c => { c.classList.add('disabled'); c.onclick = null; });
+    continueBtn.disabled = true;
+    continueBtn.style.opacity = '0.6';
+
+    const trainSummary = selectedTrains.map((t, i) =>
+      i === 0 ? `Train ${t.id} at ${t.time}` : `+ backup Train ${t.id} at ${t.time}`
+    ).join(', ');
+    addMessage('user', trainSummary);
+
+    if(type === 'morning'){
+      state.morningTrains = [...selectedTrains];
+      state.morningTrain = selectedTrains[0];
+      history.push({role:'user', content:`I selected ${trainSummary} as my morning train(s).`});
+      const resp = await callNova(`I selected ${trainSummary} as my morning train(s). Now ask me what time I leave work in the evening.`);
+      await novaSay(parseNovaResponse(resp).clean);
+      state.step = 'evening_time';
+      document.getElementById('userInput').placeholder = 'e.g. 5:30 PM or 6 PM';
+    } else {
+      state.eveningTrains = [...selectedTrains];
+      state.eveningTrain = selectedTrains[0];
+      history.push({role:'user', content:`I selected ${trainSummary} as my evening train(s).`});
+      const resp = await callNova(`I selected ${trainSummary} as my evening train(s). Now ask for their phone number — it's used to identify their subscription and makes it easy to manage or unsubscribe later. Keep it brief.`);
+      await novaSay(parseNovaResponse(resp).clean);
+      state.step = 'phone';
+      document.getElementById('userInput').placeholder = 'Your 10-digit phone number';
+    }
+  };
 }
 
 // ── Step handlers ──────────────────────────────────────────
@@ -1174,8 +1232,8 @@ async function continueAfterConsent(){
     <div class="summary-row"><span class="summary-label">LINE</span><span class="summary-value">${state.lineName}</span></div>
     <div class="summary-row"><span class="summary-label">STATION</span><span class="summary-value">${state.stationName}</span></div>
     <div class="summary-row"><span class="summary-label">SCHEDULE</span><span class="summary-value">${state.schedule==='saturday'?'🏖️ Saturday':state.schedule==='sunday'?'🌅 Sunday & Holidays':'📅 Weekday'}</span></div>
-    <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value">Train ${state.morningTrain?.id} · ${state.morningTrain?.time}</span></div>
-    <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value">Train ${state.eveningTrain?.id} · ${state.eveningTrain?.time}</span></div>
+    <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value">${(state.morningTrains.length?state.morningTrains:[state.morningTrain]).filter(Boolean).map((t,i)=>i===0?`Train ${t.id} · ${t.time}`:`+${t.id} · ${t.time}`).join(' ')}</span></div>
+    <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value">${(state.eveningTrains.length?state.eveningTrains:[state.eveningTrain]).filter(Boolean).map((t,i)=>i===0?`Train ${t.id} · ${t.time}`:`+${t.id} · ${t.time}`).join(' ')}</span></div>
     ${state.phone ? `<div class="summary-row"><span class="summary-label">PHONE</span><span class="summary-value">${state.phone}</span></div>` : `<div class="summary-row"><span class="summary-label">ALERTS</span><span class="summary-value">🔔 Push notifications (ntfy)</span></div>`}`;
   const resp = await callNova("Show the user a summary and ask them to confirm their subscription.");
   const parsed = parseNovaResponse(resp);
@@ -1205,8 +1263,8 @@ async function doSubscribe(){
   showTyping();
   try{
     const body = {
-      morning_train: state.morningTrain.id,
-      evening_train: state.eveningTrain.id,
+      morning_trains: (state.morningTrains || []).map(t => t.id),
+      evening_trains: (state.eveningTrains || []).map(t => t.id),
       delay_alerts: true,
       ontime_alerts: true,
       station: state.station || ''
@@ -1443,8 +1501,8 @@ async function handlePostChip(opt){
         <div class="summary-header">✦ YOUR SUBSCRIPTION</div>
         <div class="summary-row"><span class="summary-label">LINE</span><span class="summary-value">${state.lineName||'—'}</span></div>
         <div class="summary-row"><span class="summary-label">STATION</span><span class="summary-value">${state.stationName||'—'}</span></div>
-        <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value">Train ${state.morningTrain?.id||'—'} · ${state.morningTrain?.time||''}</span></div>
-        <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value">Train ${state.eveningTrain?.id||'—'} · ${state.eveningTrain?.time||''}</span></div>
+        <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value">${(state.morningTrains.length?state.morningTrains:[state.morningTrain]).filter(Boolean).map((t,i)=>i===0?`Train ${t.id} · ${t.time}`:`+${t.id} · ${t.time}`).join(' ')||'—'}</span></div>
+        <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value">${(state.eveningTrains.length?state.eveningTrains:[state.eveningTrain]).filter(Boolean).map((t,i)=>i===0?`Train ${t.id} · ${t.time}`:`+${t.id} · ${t.time}`).join(' ')||'—'}</span></div>
         <div class="summary-row"><span class="summary-label">PHONE</span><span class="summary-value">${state.phone||'—'}</span></div>`;
       addMessage('nova','',card);
       break;
@@ -1541,7 +1599,7 @@ async function selectSchedule(opt){
 }
 
 function resetState(){
-  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, phone:null, ntfy_topic:null, schedule:'weekday', allInbound:[], allTrainsData:null, unsubPhone:null};
+  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, morningTrains:[], eveningTrains:[], phone:null, ntfy_topic:null, schedule:'weekday', allInbound:[], allTrainsData:null, unsubPhone:null};
   history = [];
 }
 
@@ -1575,7 +1633,7 @@ async function goBack(){
   switch(prevStep){
     case 'line':
       state.line=null; state.lineName=null; state.station=null; state.stationName=null;
-      state.morningTrain=null; state.eveningTrain=null; state.allTrainsData=null;
+      state.morningTrain=null; state.eveningTrain=null; state.morningTrains=[]; state.eveningTrains=[]; state.allTrainsData=null;
       state.step='line';
       await novaSay("No problem! Which line do you commute on?");
       showChips(LINES, selectLine);
@@ -1583,25 +1641,25 @@ async function goBack(){
       break;
     case 'station':
       state.station=null; state.stationName=null;
-      state.morningTrain=null; state.eveningTrain=null; state.allTrainsData=null;
+      state.morningTrain=null; state.eveningTrain=null; state.morningTrains=[]; state.eveningTrains=[]; state.allTrainsData=null;
       state.step='station';
       await novaSay(`Got it! Which station on the ${state.lineName}?`);
       showChips(STATIONS[state.line]||[], selectStation);
       break;
     case 'morning_time':
-      state.morningTrain=null; state.eveningTrain=null; state.allTrainsData=null;
+      state.morningTrain=null; state.eveningTrain=null; state.morningTrains=[]; state.eveningTrains=[]; state.allTrainsData=null;
       state.step='morning_time';
       await novaSay(`Sure! What time do you usually leave ${state.stationName} in the morning?`);
       document.getElementById('userInput').placeholder='e.g. 7:30 AM or 8 AM';
       break;
     case 'morning_train':
-      state.morningTrain=null;
+      state.morningTrain=null; state.morningTrains=[];
       state.step='morning_time';
       await novaSay("No worries! What time do you usually head to NYC in the morning?");
       document.getElementById('userInput').placeholder='e.g. 7:30 AM or 8 AM';
       break;
     case 'evening_time':
-      state.eveningTrain=null;
+      state.eveningTrain=null; state.eveningTrains=[];
       state.step='evening_time';
       await novaSay(`Got it! What time do you usually leave work in the evening?`);
       document.getElementById('userInput').placeholder='e.g. 5:30 PM or 6 PM';

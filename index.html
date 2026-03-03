@@ -626,20 +626,40 @@
 
                     <!-- Train to NYC -->
                     <div class="form-group">
-                        <label for="morning-train">Train to NYC/Newark <span class="required">*</span></label>
-                        <select id="morning-train" required disabled>
+                        <label>Train to NYC/Newark <span class="required">*</span></label>
+                        <select id="morning-train-1" required disabled>
                             <option value="">Select station first...</option>
                         </select>
-                        <p class="help-text">Your usual train heading to work/NYC</p>
+                        <div id="morning-train-2-row" style="display:none;margin-top:0.4rem">
+                            <select id="morning-train-2">
+                                <option value="">+ Add backup train (optional)</option>
+                            </select>
+                        </div>
+                        <div id="morning-train-3-row" style="display:none;margin-top:0.4rem">
+                            <select id="morning-train-3">
+                                <option value="">+ Add 2nd backup train (optional)</option>
+                            </select>
+                        </div>
+                        <p class="help-text">Select up to 3 trains — #1 is primary, #2 & #3 are backups</p>
                     </div>
 
                     <!-- Train from NYC -->
                     <div class="form-group">
-                        <label for="evening-train">Train from NYC/Newark <span class="required">*</span></label>
-                        <select id="evening-train" required disabled>
+                        <label>Train from NYC/Newark <span class="required">*</span></label>
+                        <select id="evening-train-1" required disabled>
                             <option value="">Select station first...</option>
                         </select>
-                        <p class="help-text">Your usual train heading home</p>
+                        <div id="evening-train-2-row" style="display:none;margin-top:0.4rem">
+                            <select id="evening-train-2">
+                                <option value="">+ Add backup train (optional)</option>
+                            </select>
+                        </div>
+                        <div id="evening-train-3-row" style="display:none;margin-top:0.4rem">
+                            <select id="evening-train-3">
+                                <option value="">+ Add 2nd backup train (optional)</option>
+                            </select>
+                        </div>
+                        <p class="help-text">Select up to 3 trains — #1 is primary, #2 & #3 are backups</p>
                     </div>
 
                     <!-- Phone Number (required) -->
@@ -909,8 +929,8 @@
             } else {
                 stationSelect.disabled = true;
                 stationSelect.innerHTML = '<option value="">Select your line first...</option>';
-                document.getElementById('morning-train').disabled = true;
-                document.getElementById('evening-train').disabled = true;
+                document.getElementById('morning-train-1').disabled = true;
+                document.getElementById('evening-train-1').disabled = true;
                 document.getElementById('schedule-group').style.display = 'none';
             }
         });
@@ -923,8 +943,8 @@
             if (station && line) {
                 await loadTrains(station, line);
             } else {
-                document.getElementById('morning-train').disabled = true;
-                document.getElementById('evening-train').disabled = true;
+                document.getElementById('morning-train-1').disabled = true;
+                document.getElementById('evening-train-1').disabled = true;
             }
         });
 
@@ -951,34 +971,57 @@
             });
         });
 
+        function _populateSelect(sel, trainList, firstOpt, errMsg) {
+            if (trainList.length > 0) {
+                sel.innerHTML = `<option value="">${firstOpt}</option>`;
+                trainList.forEach(train => {
+                    const opt = document.createElement('option');
+                    opt.value = train.id;
+                    opt.textContent = `${train.id} - ${train.time} to ${train.destination}`;
+                    opt.dataset.time = train.time;
+                    opt.dataset.destination = train.destination;
+                    sel.appendChild(opt);
+                });
+            } else {
+                sel.innerHTML = `<option value="">${errMsg}</option>`;
+            }
+        }
+
         async function loadTrains(stationCode, lineCode, schedule) {
             _currentStation = stationCode;
             _currentLine = lineCode;
             if (!schedule) schedule = _selectedSchedule;
 
-            const morningSelect = document.getElementById('morning-train');
-            const eveningSelect = document.getElementById('evening-train');
+            const m1 = document.getElementById('morning-train-1');
+            const m2 = document.getElementById('morning-train-2');
+            const m3 = document.getElementById('morning-train-3');
+            const e1 = document.getElementById('evening-train-1');
+            const e2 = document.getElementById('evening-train-2');
+            const e3 = document.getElementById('evening-train-3');
 
-            morningSelect.disabled = false;
-            eveningSelect.disabled = false;
+            m1.disabled = false;
+            e1.disabled = false;
+            m1.innerHTML = '<option value="">Loading trains...</option>';
+            e1.innerHTML = '<option value="">Loading trains...</option>';
 
-            morningSelect.innerHTML = '<option value="">Loading trains...</option>';
-            eveningSelect.innerHTML = '<option value="">Loading trains...</option>';
+            // Reset backup rows on station/schedule change
+            document.getElementById('morning-train-2-row').style.display = 'none';
+            document.getElementById('morning-train-3-row').style.display = 'none';
+            document.getElementById('evening-train-2-row').style.display = 'none';
+            document.getElementById('evening-train-3-row').style.display = 'none';
+            m2.innerHTML = '<option value="">+ Add backup train (optional)</option>';
+            m3.innerHTML = '<option value="">+ Add 2nd backup train (optional)</option>';
+            e2.innerHTML = '<option value="">+ Add backup train (optional)</option>';
+            e3.innerHTML = '<option value="">+ Add 2nd backup train (optional)</option>';
 
             // Show schedule selector now that a station is chosen
             document.getElementById('schedule-group').style.display = '';
 
             try {
-                // Fetch REAL trains from backend API
                 const response = await fetch(`${API_BASE}/trains/${stationCode}?schedule=${schedule}`);
-                
-                if (!response.ok) {
-                    throw new Error('Failed to fetch trains');
-                }
-                
+                if (!response.ok) throw new Error('Failed to fetch trains');
                 const trains = await response.json();
-                
-                // Filter trains by selected line using keyword matching
+
                 const filterByLine = (trainList) => {
                     if (!trainList || trainList.length === 0) return [];
                     const keywords = getLineKeywords(lineCode);
@@ -986,49 +1029,30 @@
                         const trainLine = (train.line || '').toLowerCase();
                         return keywords.some(kw => trainLine.includes(kw));
                     });
-                    // Fallback: if all trains were filtered out, show all of them
                     return filtered.length > 0 ? filtered : trainList;
                 };
 
                 console.log('API response:', JSON.stringify(trains).slice(0, 300));
-                const filteredOutbound = filterByLine(trains.outbound || []);
-                const filteredInbound = filterByLine(trains.inbound || []);
-                
-                morningSelect.innerHTML = '<option value="">Select train to NYC...</option>';
-                eveningSelect.innerHTML = '<option value="">Select train from NYC...</option>';
-                
-                // Populate morning trains (to NYC)
-                if (filteredOutbound.length > 0) {
-                    filteredOutbound.forEach(train => {
-                        const option = document.createElement('option');
-                        option.value = train.id;
-                        option.textContent = `${train.id} - ${train.time} to ${train.destination}`;
-                        option.dataset.time = train.time;
-                        option.dataset.destination = train.destination;
-                        morningSelect.appendChild(option);
-                    });
-                } else {
-                    morningSelect.innerHTML = '<option value="">No trains found for this line</option>';
-                }
-                
-                // Populate evening trains (from NYC)
-                if (filteredInbound.length > 0) {
-                    filteredInbound.forEach(train => {
-                        const option = document.createElement('option');
-                        option.value = train.id;
-                        option.textContent = `${train.id} - ${train.time} to ${train.destination}`;
-                        option.dataset.time = train.time;
-                        option.dataset.destination = train.destination;
-                        eveningSelect.appendChild(option);
-                    });
-                } else {
-                    eveningSelect.innerHTML = '<option value="">No trains found for this line</option>';
-                }
-                
+                const outbound = filterByLine(trains.outbound || []);
+                const inbound  = filterByLine(trains.inbound  || []);
+
+                _populateSelect(m1, outbound, 'Select train to NYC...',    'No trains found for this line');
+                _populateSelect(m2, outbound, '+ Add backup train (optional)', 'No trains found for this line');
+                _populateSelect(m3, outbound, '+ Add 2nd backup train (optional)', 'No trains found for this line');
+                _populateSelect(e1, inbound,  'Select train from NYC...', 'No trains found for this line');
+                _populateSelect(e2, inbound,  '+ Add backup train (optional)', 'No trains found for this line');
+                _populateSelect(e3, inbound,  '+ Add 2nd backup train (optional)', 'No trains found for this line');
+
+                // Progressive reveal — show next backup row when a train is selected
+                m1.onchange = () => { if (m1.value) document.getElementById('morning-train-2-row').style.display = ''; };
+                m2.onchange = () => { if (m2.value) document.getElementById('morning-train-3-row').style.display = ''; };
+                e1.onchange = () => { if (e1.value) document.getElementById('evening-train-2-row').style.display = ''; };
+                e2.onchange = () => { if (e2.value) document.getElementById('evening-train-3-row').style.display = ''; };
+
             } catch (error) {
                 console.error('Error loading trains:', error);
-                morningSelect.innerHTML = '<option value="">Error loading trains - try again</option>';
-                eveningSelect.innerHTML = '<option value="">Error loading trains - try again</option>';
+                m1.innerHTML = '<option value="">Error loading trains - try again</option>';
+                e1.innerHTML = '<option value="">Error loading trains - try again</option>';
             }
         }
         
@@ -1073,10 +1097,14 @@
                     const stationLabel = sub.station_name && sub.station_name !== sub.station
                         ? `${sub.station_name} (${sub.station})`
                         : (sub.station || '—');
+                    const fmtTrains = (arr, single) => {
+                        const list = (arr && arr.length > 0) ? arr : (single ? [single] : []);
+                        return list.map((t, i) => i === 0 ? `#${t}` : `+ #${t} (backup)`).join(', ') || '—';
+                    };
                     document.getElementById('manage-details').innerHTML = `
                         <p><strong>Home Station:</strong> ${stationLabel}</p>
-                        <p><strong>Morning Train:</strong> Train #${sub.morning_train} → toward New York</p>
-                        <p><strong>Evening Train:</strong> Train #${sub.evening_train} → toward home</p>
+                        <p><strong>Morning Trains:</strong> ${fmtTrains(sub.morning_trains, sub.morning_train)} → toward New York</p>
+                        <p><strong>Evening Trains:</strong> ${fmtTrains(sub.evening_trains, sub.evening_train)} → toward home</p>
                         <p><strong>Alerts:</strong> ${[sub.delay_alerts ? 'Delays & cancellations' : '', sub.ontime_alerts ? 'On-time confirmation' : ''].filter(Boolean).join(' · ')}</p>
                         <p style="margin-top:0.5rem"><strong>ntfy Topic:</strong><br><span style="font-family:monospace;font-size:0.8rem;word-break:break-all">${sub.ntfy_topic}</span></p>`;
                     window._manageTopic = topic;
@@ -1169,20 +1197,26 @@
             const stationName = document.getElementById('home-station').selectedOptions[0].dataset.name;
             const lineCode = document.getElementById('train-line').value;
             const lineName = document.getElementById('train-line').selectedOptions[0].textContent;
-            const morningTrain = document.getElementById('morning-train').value;
-            const eveningTrain = document.getElementById('evening-train').value;
+            const morningTrain1 = document.getElementById('morning-train-1').value;
+            const morningTrain2 = document.getElementById('morning-train-2').value;
+            const morningTrain3 = document.getElementById('morning-train-3').value;
+            const eveningTrain1 = document.getElementById('evening-train-1').value;
+            const eveningTrain2 = document.getElementById('evening-train-2').value;
+            const eveningTrain3 = document.getElementById('evening-train-3').value;
+            const morningTrains = [morningTrain1, morningTrain2, morningTrain3].filter(Boolean);
+            const eveningTrains = [eveningTrain1, eveningTrain2, eveningTrain3].filter(Boolean);
             const phone = document.getElementById('phone').value;
             const delayAlerts = document.getElementById('delay-alerts').checked;
             const ontimeAlerts = document.getElementById('ontime-alerts').checked;
 
             const errorEl = document.getElementById('subscribe-error');
             const digits = phone.replace(/\D/g, '');
-            if (!stationCode || !lineCode || !morningTrain || !eveningTrain || !phone.trim()) {
+            if (!stationCode || !lineCode || !morningTrain1 || !eveningTrain1 || !phone.trim()) {
                 let missing = [];
                 if (!lineCode) missing.push('train line');
                 if (!stationCode) missing.push('home station');
-                if (!morningTrain) missing.push('train to NYC');
-                if (!eveningTrain) missing.push('train from NYC');
+                if (!morningTrain1) missing.push('train to NYC');
+                if (!eveningTrain1) missing.push('train from NYC');
                 if (!phone.trim()) missing.push('phone number');
                 errorEl.textContent = 'Please fill in: ' + missing.join(', ');
                 errorEl.classList.add('show');
@@ -1198,8 +1232,8 @@
 
             subscribePayload = {
                 phone: subscribePhone,
-                morning_train: morningTrain,
-                evening_train: eveningTrain,
+                morning_trains: morningTrains,
+                evening_trains: eveningTrains,
                 delay_alerts: delayAlerts,
                 ontime_alerts: ontimeAlerts,
                 station: stationCode
@@ -1267,8 +1301,8 @@
             sessionStorage.setItem('subscription', JSON.stringify({
                 station: stationName,
                 line: lineName,
-                morning: document.getElementById('morning-train').selectedOptions[0].textContent,
-                evening: document.getElementById('evening-train').selectedOptions[0].textContent,
+                morning: document.getElementById('morning-train-1').selectedOptions[0].textContent,
+                evening: document.getElementById('evening-train-1').selectedOptions[0].textContent,
                 phone: subscribePhone,
                 ntfy_topic: subscribeNtfyTopic,
                 manage_url: manageUrl
