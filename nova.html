@@ -1702,8 +1702,10 @@ async function sendMessage(){
 
   // Steps that need card taps — but still let Nova answer questions/off-topic gracefully
   if(state.step==='morning_train'){
+    // If they typed a time, re-filter the cards immediately
+    if(/\d/.test(text)){ await handleMorningTime(text); return; }
     showTyping();
-    const r = await callNova(`The user is choosing their morning train from ${state.stationName}. Train cards are shown above — they need to TAP one to select it. They typed: "${text}". If they're asking a question about trains or commuting, answer it briefly then redirect them to tap a card. If it's totally off-topic, be witty and playfully redirect them back. If they mention a time (like "8am"), let them know they can type a time to re-filter the cards. Keep it short.`);
+    const r = await callNova(`The user is choosing their morning train from ${state.stationName}. Train cards are shown above — they need to TAP one to select it. They typed: "${text}". If they're asking a question about trains or commuting, answer it briefly then redirect them to tap a card. If it's totally off-topic, be witty and playfully redirect them back. Keep it short.`);
     removeTyping();
     await novaSay(parseNovaResponse(r).clean);
     return;
