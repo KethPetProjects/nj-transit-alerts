@@ -832,6 +832,21 @@
                     <a id="ntfy-manage-link" href="#" class="btn btn-secondary" style="display:inline-block;margin-top:0.5rem;text-decoration:none">Manage / Unsubscribe →</a>
                 </div>
 
+                <!-- Change-verification box: shown when existing subscriber updates trains -->
+                <div class="verification-box" id="change-verify-box">
+                    <div class="success-icon">🔐</div>
+                    <h3>Verify the change</h3>
+                    <p style="margin-bottom:1rem">We sent a 6-digit code to your ntfy app to confirm this update. Enter it below.</p>
+                    <div class="form-group">
+                        <input type="text" id="change-verify-code" class="form-control"
+                               placeholder="6-digit code" maxlength="6" inputmode="numeric"
+                               style="text-align:center;letter-spacing:0.35em;font-size:1.25rem;font-family:monospace">
+                    </div>
+                    <p id="change-verify-error" class="error-message"></p>
+                    <button onclick="submitChangeVerify()" class="btn btn-primary" style="width:100%;margin-top:0.5rem" id="change-verify-btn">Confirm Update</button>
+                    <button onclick="cancelChangeVerify()" class="btn btn-secondary" style="width:100%;margin-top:0.5rem">Cancel</button>
+                </div>
+
                 <div class="success-message" id="success-message">
                     <div class="success-icon">✅</div>
                     <h2>You're All Set!</h2>
@@ -1316,11 +1331,66 @@
                 return;
             }
 
-            subscribeNtfyTopic = data.ntfy_topic || '';
-            const manageUrl = data.manage_url || '';
-            document.getElementById('subscribe-form').style.display = 'none';
             submitBtn.disabled = false;
             submitBtn.textContent = 'Subscribe';
+
+            // Existing active subscriber — show code-entry box for 2FA
+            if (data.requires_verification) {
+                document.getElementById('subscribe-form').style.display = 'none';
+                document.getElementById('change-verify-code').value = '';
+                document.getElementById('change-verify-error').classList.remove('show');
+                document.getElementById('change-verify-box').classList.add('show');
+                return;
+            }
+
+            document.getElementById('subscribe-form').style.display = 'none';
+            _showNtfySetupBox(data);
+        });
+
+        async function submitChangeVerify() {
+            const code = document.getElementById('change-verify-code').value.trim();
+            const errorEl = document.getElementById('change-verify-error');
+            const btn = document.getElementById('change-verify-btn');
+            if (!code || code.replace(/\D/g, '').length < 6) {
+                errorEl.textContent = 'Please enter the 6-digit code from your ntfy app.';
+                errorEl.classList.add('show');
+                return;
+            }
+            errorEl.classList.remove('show');
+            btn.disabled = true;
+            btn.textContent = 'Verifying...';
+            try {
+                const res = await fetch(`${API_BASE}/subscribe/verify-change`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ...subscribePayload, code })
+                });
+                const data = await res.json();
+                if (!res.ok) {
+                    errorEl.textContent = data.detail || 'Invalid code. Please try again.';
+                    errorEl.classList.add('show');
+                    btn.disabled = false;
+                    btn.textContent = 'Confirm Update';
+                    return;
+                }
+                document.getElementById('change-verify-box').classList.remove('show');
+                _showNtfySetupBox(data);
+            } catch (err) {
+                errorEl.textContent = 'Network error. Please try again.';
+                errorEl.classList.add('show');
+                btn.disabled = false;
+                btn.textContent = 'Confirm Update';
+            }
+        }
+
+        function cancelChangeVerify() {
+            document.getElementById('change-verify-box').classList.remove('show');
+            document.getElementById('subscribe-form').style.display = '';
+        }
+
+        function _showNtfySetupBox(data) {
+            subscribeNtfyTopic = data.ntfy_topic || '';
+            const manageUrl = data.manage_url || '';
 
             if (data.reactivated) {
                 document.getElementById('ntfy-setup-box').querySelector('h3').textContent = '👋 Welcome back!';
@@ -1330,7 +1400,6 @@
                 document.getElementById('ntfy-setup-box').querySelector('p').textContent = 'Your train selections have been saved. Your ntfy topic is unchanged — alerts continue as before. If you ever removed this topic from your ntfy app, add it back using the topic name below.';
             }
 
-            // Always show ntfy setup box (new users get full setup, returning get brief confirmation)
             document.getElementById('ntfy-topic-text').textContent = subscribeNtfyTopic;
             document.getElementById('ntfy-manage-link').href = manageUrl;
 
@@ -1349,15 +1418,10 @@
 
             // Store for success message
             sessionStorage.setItem('subscription', JSON.stringify({
-                station: stationName,
-                line: lineName,
-                morning: morningTrains.map((id, i) => i === 0 ? `#${id}` : `+ #${id}`).join(', '),
-                evening: eveningTrains.map((id, i) => i === 0 ? `#${id}` : `+ #${id}`).join(', '),
-                phone: subscribePhone,
                 ntfy_topic: subscribeNtfyTopic,
                 manage_url: manageUrl
             }));
-        });
+        }
 
         // Store phone across unsubscribe steps
         let unsubPhone = '';

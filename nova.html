@@ -761,6 +761,7 @@ let state = {
   morningTrains: [], eveningTrains: [],      // ordered list, up to 3
   phone: null, ntfy_topic: null, schedule: 'weekday', allInbound: [],
   unsubPhone: null,
+  pendingSubscribeBody: null,
   weather: null,
   timeOfDay: null
 };
@@ -1275,12 +1276,53 @@ async function doSubscribe(){
     removeTyping();
     if(res.ok){
       const data = await res.json();
+      if(data.requires_verification){
+        state.pendingSubscribeBody = body;
+        state.step = 'change_verify';
+        document.getElementById('userInput').placeholder = '6-digit code';
+        await novaSay("🔐 Looks like you already have an active subscription! I just sent a 6-digit code to your ntfy app to confirm the change. What's the code?");
+        return;
+      }
       state.ntfy_topic = data.ntfy_topic || '';
       // Always active — no verification step
       await showNtfySuccess(data.returning || false, data.reactivated || false);
     } else {
       const d=await res.json();
       await novaSay(`Hmm, something went sideways: ${d.detail}. Want to try again?`);
+    }
+  }catch(e){ removeTyping(); await novaSay("Network trouble! Try again in a sec 🔄"); }
+}
+
+async function handleChangeVerify(text){
+  const code = text.replace(/\D/g, '');
+  if(code.length !== 6){
+    showTyping();
+    const r = await callNova(`The user is entering a 6-digit verification code to confirm their train update. They typed: "${text}". That doesn't look like a 6-digit code. Ask them to check their ntfy app and try again. Keep it very short and friendly.`);
+    removeTyping();
+    await novaSay(parseNovaResponse(r).clean);
+    return;
+  }
+  showTyping();
+  try{
+    const body = { ...(state.pendingSubscribeBody || {}), code };
+    const res = await fetch(`${API_BASE}/subscribe/verify-change`,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(body)});
+    removeTyping();
+    if(res.ok){
+      const data = await res.json();
+      state.ntfy_topic = data.ntfy_topic || '';
+      state.pendingSubscribeBody = null;
+      document.getElementById('userInput').placeholder = 'Ask Ramiya anything...';
+      await showNtfySuccess(true, false);
+    } else {
+      const d = await res.json();
+      if(d.detail && d.detail.toLowerCase().includes('invalid')){
+        showTyping();
+        const r = await callNova("The user entered the wrong verification code for updating their train subscription. Tell them it's wrong, ask them to double-check their ntfy app and try again. Keep it very short and friendly.");
+        removeTyping();
+        await novaSay(parseNovaResponse(r).clean);
+      } else {
+        await novaSay(`Hmm, something went sideways: ${d.detail}. Want to try again?`);
+      }
     }
   }catch(e){ removeTyping(); await novaSay("Network trouble! Try again in a sec 🔄"); }
 }
@@ -1600,7 +1642,7 @@ async function selectSchedule(opt){
 }
 
 function resetState(){
-  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, morningTrains:[], eveningTrains:[], phone:null, ntfy_topic:null, schedule:'weekday', allInbound:[], allTrainsData:null, unsubPhone:null};
+  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, morningTrains:[], eveningTrains:[], phone:null, ntfy_topic:null, schedule:'weekday', allInbound:[], allTrainsData:null, unsubPhone:null, pendingSubscribeBody:null};
   history = [];
 }
 
@@ -1623,6 +1665,7 @@ function getStepBack(step){
     'consent': 'phone',
     'confirm': 'phone',
     'unsub_code': 'unsub_phone',
+    'change_verify': 'confirm',
   };
   return backMap[step] || 'welcome';
 }
@@ -1694,7 +1737,7 @@ async function sendMessage(){
   addMessage('user', text);
 
   // Check for back/restart intent first — works from any step
-  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','phone','consent','confirm','unsub_phone','unsub_code'];
+  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','phone','consent','confirm','unsub_phone','unsub_code','change_verify'];
   if(isGoingBack(text) && backSteps.includes(state.step)){
     await goBack();
     return;
@@ -1764,6 +1807,7 @@ async function sendMessage(){
     case 'unsub_phone': await handleUnsubPhone(text); break;
     case 'unsub_code': await handleUnsubCode(text); break;
     case 'check_phone': await handleCheckSub(text); break;
+    case 'change_verify': await handleChangeVerify(text); break;
     default: {
       showTyping();
       const resp = await callNova(text);
