@@ -1413,7 +1413,8 @@ async function handleUnsubPhone(text){
       const sub=await res.json();
       state.unsubPhone=e164;
       // Show train details directly, then send code via ntfy
-      await novaSay(`Found your subscription:\n\n🌅 Morning train: ${sub.morning_train}\n🌆 Evening train: ${sub.evening_train}`);
+      const fmtSub = (arr, single) => { const l=(arr&&arr.length)?arr:(single?[single]:[]); return l.map((t,i)=>i===0?`#${t}`:`+ #${t}`).join(', ')||'—'; };
+      await novaSay(`Found your subscription:\n\n🌅 Morning: ${fmtSub(sub.morning_trains,sub.morning_train)}\n🌆 Evening: ${fmtSub(sub.evening_trains,sub.evening_train)}`);
       // Send the verification code to their ntfy topic
       await fetch(`${API_BASE}/unsubscribe/send-code`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({phone:e164})});
       const resp = await callNova(`The user wants to unsubscribe. We found their subscription and just sent a 6-digit code to their ntfy app as a push notification. Tell them to check their ntfy notification for the code and enter it here to confirm. Be warm but a little sad about them leaving 😢. Keep it short.`);
@@ -1471,8 +1472,8 @@ async function handleCheckSub(text){
       card.className='summary-card';
       card.innerHTML=`
         <div class="summary-header">✦ ACTIVE SUBSCRIPTION</div>
-        <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value">Train ${sub.morning_train}</span></div>
-        <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value">Train ${sub.evening_train}</span></div>
+        <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value">${((arr,s)=>{const l=(arr&&arr.length)?arr:(s?[s]:[]);return l.map((t,i)=>i===0?`#${t}`:`+ #${t}`).join(', ')||'—'})(sub.morning_trains,sub.morning_train)}</span></div>
+        <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value">${((arr,s)=>{const l=(arr&&arr.length)?arr:(s?[s]:[]);return l.map((t,i)=>i===0?`#${t}`:`+ #${t}`).join(', ')||'—'})(sub.evening_trains,sub.evening_train)}</span></div>
         <div class="summary-row"><span class="summary-label">STATUS</span><span class="summary-value" style="color:var(--success)">● ${sub.status?.toUpperCase()}</span></div>`;
       const resp = await callNova("Found the subscription. Confirm it's active and ask if they need anything else.");
       await novaSay(parseNovaResponse(resp).clean, card);
