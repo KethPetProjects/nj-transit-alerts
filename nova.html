@@ -984,14 +984,45 @@ function parseTrainMinutes(t){
   return h*60+min;
 }
 
+// Lines where commuters board evening trains at either Hoboken or Secaucus
+const DUAL_HUB_LINES = ['ML', 'BC', 'PV'];
+
 async function loadAllTrains(){
   if(state.allTrainsData) return state.allTrainsData;
   const schedule = state.schedule || 'weekday';
-  const res = await fetch(`${API_BASE}/trains/${state.station}?schedule=${schedule}`);
+  const hubParam = state.eveningHub ? `&hub=${state.eveningHub}` : '';
+  const res = await fetch(`${API_BASE}/trains/${state.station}?schedule=${schedule}${hubParam}`);
   const data = await res.json();
   state.allTrainsData = data;
   state.allInbound = data.inbound||[];
   return data;
+}
+
+function showHubCards(){
+  const options = [
+    { hub: 'HB', label: '🚂 Hoboken Terminal' },
+    { hub: 'SE', label: '🔀 Secaucus Junction' },
+  ];
+  const wrapper = document.createElement('div');
+  wrapper.className = 'chips-row';
+  wrapper.id = 'hub-cards';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'chip';
+    btn.textContent = opt.label;
+    btn.onclick = async () => {
+      state.eveningHub = opt.hub;
+      state.allTrainsData = null; // invalidate cache so trains reload with correct hub
+      wrapper.remove();
+      addMessage('user', opt.label);
+      const resp = await callNova(`I board my evening train at ${opt.label.replace(/^[^ ]+ /, '')}. Now ask me what time I leave work in the evening.`);
+      await novaSay(parseNovaResponse(resp).clean);
+      state.step = 'evening_time';
+      document.getElementById('userInput').placeholder = 'e.g. 5:30 PM or 6 PM';
+    };
+    wrapper.appendChild(btn);
+  });
+  appendToChat(wrapper);
 }
 
 function showTrainCards(trains, type){
@@ -1075,10 +1106,17 @@ function showTrainCards(trains, type){
       state.morningTrains = [...selectedTrains];
       state.morningTrain = selectedTrains[0];
       history.push({role:'user', content:`I selected ${trainSummary} as my morning train(s).`});
-      const resp = await callNova(`I selected ${trainSummary} as my morning train(s). Now ask me what time I leave work in the evening.`);
-      await novaSay(parseNovaResponse(resp).clean);
-      state.step = 'evening_time';
-      document.getElementById('userInput').placeholder = 'e.g. 5:30 PM or 6 PM';
+      if(DUAL_HUB_LINES.includes(state.line)){
+        // Ask where they board in the evening — Hoboken or Secaucus
+        await novaSay("One quick question — where do you board your evening train home?");
+        showHubCards();
+        state.step = 'evening_hub';
+      } else {
+        const resp = await callNova(`I selected ${trainSummary} as my morning train(s). Now ask me what time I leave work in the evening.`);
+        await novaSay(parseNovaResponse(resp).clean);
+        state.step = 'evening_time';
+        document.getElementById('userInput').placeholder = 'e.g. 5:30 PM or 6 PM';
+      }
     } else {
       state.eveningTrains = [...selectedTrains];
       state.eveningTrain = selectedTrains[0];
@@ -1271,7 +1309,8 @@ async function doSubscribe(){
       evening_trains: (state.eveningTrains || []).map(t => t.id),
       delay_alerts: true,
       ontime_alerts: true,
-      station: state.station || ''
+      station: state.station || '',
+      ...(state.eveningHub ? { evening_hub: state.eveningHub } : {})
     };
     if (!state.phone) { removeTyping(); await novaSay("I need your phone number first! What is it?"); state.step='phone'; return; }
     body.phone = '+1' + state.phone.replace(/\D/g, '');
@@ -1645,7 +1684,7 @@ async function selectSchedule(opt){
 }
 
 function resetState(){
-  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, morningTrains:[], eveningTrains:[], phone:null, ntfy_topic:null, schedule:'weekday', allInbound:[], allTrainsData:null, unsubPhone:null, pendingSubscribeBody:null};
+  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, morningTrains:[], eveningTrains:[], phone:null, ntfy_topic:null, schedule:'weekday', allInbound:[], allTrainsData:null, unsubPhone:null, pendingSubscribeBody:null, eveningHub:null};
   history = [];
 }
 
@@ -1662,7 +1701,8 @@ function getStepBack(step){
     'schedule': 'station',
     'morning_time': 'schedule',
     'morning_train': 'morning_time',
-    'evening_time': 'morning_train',
+    'evening_hub': 'morning_train',
+    'evening_time': DUAL_HUB_LINES.includes(state.line) ? 'evening_hub' : 'morning_train',
     'evening_train': 'evening_time',
     'phone': 'evening_train',
     'consent': 'phone',
@@ -1704,6 +1744,12 @@ async function goBack(){
       state.step='morning_time';
       await novaSay("No worries! What time do you usually head to NYC in the morning?");
       document.getElementById('userInput').placeholder='e.g. 7:30 AM or 8 AM';
+      break;
+    case 'evening_hub':
+      state.eveningHub=null; state.eveningTrain=null; state.eveningTrains=[]; state.allTrainsData=null;
+      state.step='evening_hub';
+      await novaSay("No problem! Where do you board your evening train home?");
+      showHubCards();
       break;
     case 'evening_time':
       state.eveningTrain=null; state.eveningTrains=[];
