@@ -1059,7 +1059,7 @@
                 _selectedHub = btn.dataset.hub;
                 document.querySelectorAll('#hub-toggle .schedule-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
-                if (_currentStation) await loadTrains(_currentStation, _currentLine, _selectedSchedule);
+                if (_currentStation) await loadTrains(_currentStation, _currentLine, _selectedSchedule, true);
             });
         });
 
@@ -1125,43 +1125,67 @@
             picker.appendChild(hint);
         }
 
-        async function loadTrains(stationCode, lineCode, schedule) {
+        // hubChanged=true means only the evening hub toggle changed — preserve morning selections
+        async function loadTrains(stationCode, lineCode, schedule, hubChanged = false) {
             _currentStation = stationCode;
             _currentLine = lineCode;
             if (!schedule) schedule = _selectedSchedule;
 
-            // Show/hide hub selector depending on line
             const hubGroup = document.getElementById('evening-hub-group');
             const needsHub = DUAL_HUB_LINES.includes(lineCode);
             hubGroup.style.display = needsHub ? '' : 'none';
             if (!needsHub) _selectedHub = null;
 
-            // If hub-dependent line but no hub selected yet, prompt user to pick one
-            if (needsHub && !_selectedHub) {
-                _resetPickers('Select your evening boarding station above first...');
-                document.getElementById('schedule-group').style.display = '';
+            document.getElementById('schedule-group').style.display = '';
+
+            const filterByLine = (trainList) => {
+                if (!trainList || trainList.length === 0) return [];
+                const keywords = getLineKeywords(lineCode);
+                const filtered = trainList.filter(train => keywords.some(kw => (train.line || '').toLowerCase().includes(kw)));
+                return filtered.length > 0 ? filtered : trainList;
+            };
+
+            // Hub changed — only reload evening picker, leave morning selections intact
+            if (hubChanged) {
+                _selectedTrains.evening = [];
+                const eveningPicker = document.getElementById('evening-train-picker');
+                eveningPicker.innerHTML = '<div class="train-picker-placeholder">Loading trains...</div>';
+                eveningPicker.classList.remove('has-selection');
+                try {
+                    const hubParam = _selectedHub ? `&hub=${_selectedHub}` : '';
+                    const res = await fetch(`${API_BASE}/trains/${stationCode}?schedule=${schedule}${hubParam}`);
+                    if (!res.ok) throw new Error();
+                    const trains = await res.json();
+                    _renderTrainPicker(filterByLine(trains.inbound || []), 'evening');
+                } catch (e) {
+                    eveningPicker.innerHTML = '<div class="train-picker-placeholder">Error loading trains — try again</div>';
+                }
                 return;
             }
 
+            // Full load — reset both pickers
             _resetPickers('Loading trains...');
-            document.getElementById('schedule-group').style.display = '';
 
             try {
-                const hubParam = _selectedHub ? `&hub=${_selectedHub}` : '';
-                const response = await fetch(`${API_BASE}/trains/${stationCode}?schedule=${schedule}${hubParam}`);
-                if (!response.ok) throw new Error('Failed to fetch trains');
-                const trains = await response.json();
+                // Always fetch without hub for morning trains (hub only affects evening)
+                const res = await fetch(`${API_BASE}/trains/${stationCode}?schedule=${schedule}`);
+                if (!res.ok) throw new Error('Failed to fetch trains');
+                const trains = await res.json();
 
-                const filterByLine = (trainList) => {
-                    if (!trainList || trainList.length === 0) return [];
-                    const keywords = getLineKeywords(lineCode);
-                    const filtered = trainList.filter(train => keywords.some(kw => (train.line || '').toLowerCase().includes(kw)));
-                    return filtered.length > 0 ? filtered : trainList;
-                };
-
-                console.log('API response:', JSON.stringify(trains).slice(0, 300));
                 _renderTrainPicker(filterByLine(trains.outbound || []), 'morning');
-                _renderTrainPicker(filterByLine(trains.inbound  || []), 'evening');
+
+                // Evening: show placeholder until hub is chosen on dual-hub lines
+                if (needsHub && !_selectedHub) {
+                    document.getElementById('evening-train-picker').innerHTML =
+                        '<div class="train-picker-placeholder">Select your evening boarding station above ↑</div>';
+                } else {
+                    const hubParam = _selectedHub ? `&hub=${_selectedHub}` : '';
+                    const resHub = _selectedHub
+                        ? await fetch(`${API_BASE}/trains/${stationCode}?schedule=${schedule}${hubParam}`)
+                        : res;
+                    const trainsHub = _selectedHub ? await resHub.json() : trains;
+                    _renderTrainPicker(filterByLine(trainsHub.inbound || []), 'evening');
+                }
 
             } catch (error) {
                 console.error('Error loading trains:', error);
