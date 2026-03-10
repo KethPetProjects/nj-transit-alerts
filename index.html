@@ -703,6 +703,16 @@
                         <p class="help-text">Tap to select up to 3 — #1 is primary, #2 & #3 are backups</p>
                     </div>
 
+                    <!-- Evening boarding hub (only for ML/BC/PV which go Hoboken→Secaucus→NJ) -->
+                    <div class="form-group" id="evening-hub-group" style="display:none">
+                        <label>Evening Boarding Station <span class="required">*</span></label>
+                        <div style="display:flex;gap:0.5rem;margin-top:0.25rem" id="hub-toggle">
+                            <button type="button" class="schedule-btn" data-hub="HB">🚂 Hoboken</button>
+                            <button type="button" class="schedule-btn" data-hub="SE">🔀 Secaucus Junction</button>
+                        </div>
+                        <p class="help-text">Where do you board your evening train back home?</p>
+                    </div>
+
                     <!-- Train from NYC -->
                     <div class="form-group">
                         <label>Train from NYC/Newark <span class="required">*</span></label>
@@ -979,7 +989,11 @@
             
             if (lineCode) {
                 stationSelect.disabled = false;
-                
+                // Reset hub when line changes
+                _selectedHub = null;
+                document.querySelectorAll('#hub-toggle .schedule-btn').forEach(b => b.classList.remove('active'));
+                document.getElementById('evening-hub-group').style.display = 'none';
+
                 // Get stations for this line
                 const stations = getStationsByLine(lineCode);
                 
@@ -1019,9 +1033,13 @@
             return 'weekday';
         }
 
-        // Track selected schedule globally so toggle can re-fetch
+        // Lines where commuters board at either Hoboken or Secaucus in the evening
+        const DUAL_HUB_LINES = ['ML', 'BC', 'PV'];
+
+        // Track selected schedule and hub globally so toggles can re-fetch
         let _currentStation = null, _currentLine = null;
         let _selectedSchedule = getTodaySchedule();
+        let _selectedHub = null;  // 'HB', 'SE', or null
         let _selectedTrains = { morning: [], evening: [] };
 
         // Set the correct active button on load
@@ -1030,6 +1048,16 @@
             btn.addEventListener('click', async () => {
                 _selectedSchedule = btn.dataset.schedule;
                 document.querySelectorAll('.schedule-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if (_currentStation) await loadTrains(_currentStation, _currentLine, _selectedSchedule);
+            });
+        });
+
+        // Hub toggle (Hoboken vs Secaucus) — only visible for ML/BC/PV lines
+        document.querySelectorAll('#hub-toggle .schedule-btn').forEach(btn => {
+            btn.addEventListener('click', async () => {
+                _selectedHub = btn.dataset.hub;
+                document.querySelectorAll('#hub-toggle .schedule-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 if (_currentStation) await loadTrains(_currentStation, _currentLine, _selectedSchedule);
             });
@@ -1102,11 +1130,25 @@
             _currentLine = lineCode;
             if (!schedule) schedule = _selectedSchedule;
 
+            // Show/hide hub selector depending on line
+            const hubGroup = document.getElementById('evening-hub-group');
+            const needsHub = DUAL_HUB_LINES.includes(lineCode);
+            hubGroup.style.display = needsHub ? '' : 'none';
+            if (!needsHub) _selectedHub = null;
+
+            // If hub-dependent line but no hub selected yet, prompt user to pick one
+            if (needsHub && !_selectedHub) {
+                _resetPickers('Select your evening boarding station above first...');
+                document.getElementById('schedule-group').style.display = '';
+                return;
+            }
+
             _resetPickers('Loading trains...');
             document.getElementById('schedule-group').style.display = '';
 
             try {
-                const response = await fetch(`${API_BASE}/trains/${stationCode}?schedule=${schedule}`);
+                const hubParam = _selectedHub ? `&hub=${_selectedHub}` : '';
+                const response = await fetch(`${API_BASE}/trains/${stationCode}?schedule=${schedule}${hubParam}`);
                 if (!response.ok) throw new Error('Failed to fetch trains');
                 const trains = await response.json();
 
@@ -1301,7 +1343,8 @@
                 evening_trains: eveningTrains,
                 delay_alerts: delayAlerts,
                 ontime_alerts: ontimeAlerts,
-                station: stationCode
+                station: stationCode,
+                ...(DUAL_HUB_LINES.includes(lineCode) && _selectedHub ? { evening_hub: _selectedHub } : {})
             };
 
             const submitBtn = this.querySelector('button[type="submit"]');
