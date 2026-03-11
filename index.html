@@ -664,6 +664,25 @@
                     <p style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid rgba(0,0,0,0.08)">💡 <strong>Tip:</strong> Share your alert topic with your spouse or family — so they know you're running late before you even get off the train.</p>
                 </div>
 
+                <!-- Railroad selector (shown only if lirr_enabled) -->
+                <div id="railroad-selector" style="display:none;margin-bottom:1.5rem">
+                    <label style="font-weight:600;display:block;margin-bottom:0.5rem">Select Railroad <span class="required">*</span></label>
+                    <div style="display:flex;gap:0.5rem" id="railroad-toggle">
+                        <button type="button" class="schedule-btn active" data-railroad="njt">🚊 NJ Transit</button>
+                        <button type="button" class="schedule-btn" data-railroad="lirr">🚇 LIRR</button>
+                    </div>
+                </div>
+
+                <!-- LIRR coming soon (shown when LIRR tab selected) -->
+                <div id="lirr-coming-soon" style="display:none;text-align:center;padding:2rem 0.5rem">
+                    <div style="font-size:3rem;margin-bottom:0.75rem">🚇</div>
+                    <h3 style="font-size:1.3rem;margin-bottom:0.5rem">LIRR Alerts — Coming Soon!</h3>
+                    <p style="color:var(--text-light);max-width:360px;margin:0 auto 1rem">Long Island Rail Road delay alerts are in the works. We're adding LIRR support — check back soon!</p>
+                    <div style="padding:0.75rem 1rem;background:#EFF7FF;border-radius:10px;font-size:0.85rem;color:#1565C0;max-width:360px;margin:0 auto">
+                        💡 In the meantime, <a href="nova.html" style="color:#1565C0;font-weight:600">chat with Ramiya</a> about NJ Transit alerts.
+                    </div>
+                </div>
+
                 <form id="subscribe-form">
                     <!-- Line/Corridor Selection FIRST -->
                     <div class="form-group">
@@ -972,8 +991,37 @@
             { code: 'RV', name: 'Raritan Valley Line' }
         ];
 
-        // Load lines on page load
-        document.addEventListener('DOMContentLoaded', loadLines);
+        // Load lines and config on page load
+        document.addEventListener('DOMContentLoaded', () => {
+            loadLines();
+            loadConfig();
+        });
+
+        // Feature flags
+        let _lirrEnabled = false;
+
+        async function loadConfig() {
+            try {
+                const res = await fetch(`${API_BASE}/config`);
+                if (!res.ok) return;
+                const cfg = await res.json();
+                _lirrEnabled = cfg.lirr_enabled || false;
+                if (_lirrEnabled) {
+                    document.getElementById('railroad-selector').style.display = '';
+                }
+            } catch (e) { /* silently ignore — defaults to NJT-only */ }
+        }
+
+        // Railroad toggle — NJT vs LIRR
+        document.querySelectorAll('#railroad-toggle .schedule-btn').forEach(btn => {
+            btn.addEventListener('click', () => {
+                document.querySelectorAll('#railroad-toggle .schedule-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                const isLirr = btn.dataset.railroad === 'lirr';
+                document.getElementById('subscribe-form').style.display = isLirr ? 'none' : '';
+                document.getElementById('lirr-coming-soon').style.display = isLirr ? '' : 'none';
+            });
+        });
 
         async function loadLines() {
             const lineSelect = document.getElementById('train-line');

@@ -730,6 +730,7 @@ a:hover { text-decoration: underline; }
 
 <script>
 const API_BASE = 'https://train-alerts-api.livelyhill-7b9b1325.westus2.azurecontainerapps.io';
+let _lirrEnabled = false;
 
 const LINES = [
   {code:'NE',name:'Northeast Corridor'},{code:'NC',name:'North Jersey Coast'},
@@ -1629,6 +1630,15 @@ async function handleMainMenu(opt){
     await novaSay('Opening the main app! 🚂');
     return;
   }
+  if(opt.code==='lirr'){
+    await novaSay("LIRR alerts are coming soon! I'm still memorizing all the Nassau County stops 🗺️ Check back soon — in the meantime, I can set up NJ Transit alerts for you!");
+    await delay(300);
+    showChips([
+      {name:'🔔 Set up NJT alerts instead', code:'sub'},
+      {name:'🌐 Open main app', code:'mainapp'},
+    ], handleMainMenu);
+    return;
+  }
   if(opt.code==='sub'){
     resetState();
     const resp = await callNova("User wants to subscribe. Ask which line they commute on. Do NOT list the line options — the UI will show tap buttons for them.");
@@ -1871,26 +1881,36 @@ async function sendMessage(){
 
 // ── Init ───────────────────────────────────────────────────
 (async()=>{
+  // Fetch feature flags silently
+  try {
+    const cfgRes = await fetch(`${API_BASE}/config`);
+    if (cfgRes.ok) { const cfg = await cfgRes.json(); _lirrEnabled = cfg.lirr_enabled || false; }
+  } catch(e) {}
+
   const weather = await fetchWeather();
   state.timeOfDay = getTimeOfDay();
   const greetings = {morning:'Good morning', afternoon:'Good afternoon', evening:'Good evening', night:'Hey night owl'};
   const greeting = greetings[state.timeOfDay];
   const weatherLine = weather ? getWeatherContext() : '';
-  
+
   const initMsg = `${greeting}! I'm Ramiya, your NJ Transit AI assistant.${weatherLine}\n\nI can help you set up delay alerts, manage your subscription, or answer commute questions. What do you need?`;
-  
+
   // Add to history so Nova remembers the greeting
   history.push({role:'assistant', content:initMsg});
-  
+
   await delay(400);
   addMessage('nova', initMsg);
   state.step = 'welcome';
   await delay(300);
-  showChips([
+  const welcomeChips = [
     {name:'🔔 Subscribe to alerts', code:'sub'},
+  ];
+  if (_lirrEnabled) welcomeChips.push({name:'🚇 LIRR alerts', code:'lirr'});
+  welcomeChips.push(
     {name:'🔕 Unsubscribe', code:'unsub'},
     {name:'📋 Check my subscription', code:'check'}
-  ], handleMainMenu);
+  );
+  showChips(welcomeChips, handleMainMenu);
 
   // Auto-focus input after greeting loads (desktop only — avoids keyboard popup on mobile)
   if (window.innerWidth > 640) {
