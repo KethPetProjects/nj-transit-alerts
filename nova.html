@@ -1112,6 +1112,9 @@ function showTrainCards(trains, type){
         showHubCards();
         state.step = 'evening_hub';
       } else {
+        if(state.line === 'RV'){
+          await novaSay("Got it! Quick note — Raritan Valley trains terminate at Newark Penn. We'll alert you on your home line train. The Newark Penn↔NY Penn connection runs every 5–10 min during peak hours so no separate alert needed.");
+        }
         const resp = await callNova(`I selected ${trainSummary} as my morning train(s). Now ask me what time I leave work in the evening.`);
         await novaSay(parseNovaResponse(resp).clean);
         state.step = 'evening_time';

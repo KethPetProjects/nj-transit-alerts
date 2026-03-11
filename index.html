@@ -713,6 +713,11 @@
                         <p class="help-text">Where do you board your evening train back home? We'll alert you on your home line train — the Secaucus↔NY Penn connection runs every 10–15 min during peak hours so no separate alert needed.</p>
                     </div>
 
+                    <!-- Transfer note for Raritan Valley Line -->
+                    <div class="form-group" id="rv-transfer-note" style="display:none">
+                        <p class="help-text">ℹ️ Raritan Valley trains terminate at Newark Penn. We'll alert you on your home line train — the Newark Penn↔NY Penn connection runs every 5–10 min during peak hours so no separate alert needed.</p>
+                    </div>
+
                     <!-- Train from NYC -->
                     <div class="form-group">
                         <label>Train from NYC/Newark <span class="required">*</span></label>
@@ -1135,6 +1140,8 @@
             const needsHub = DUAL_HUB_LINES.includes(lineCode);
             hubGroup.style.display = needsHub ? '' : 'none';
             if (!needsHub) _selectedHub = null;
+
+            document.getElementById('rv-transfer-note').style.display = lineCode === 'RV' ? '' : 'none';
 
             document.getElementById('schedule-group').style.display = '';
 
