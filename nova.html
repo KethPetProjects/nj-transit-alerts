@@ -1108,7 +1108,7 @@ function showTrainCards(trains, type){
       history.push({role:'user', content:`I selected ${trainSummary} as my morning train(s).`});
       if(DUAL_HUB_LINES.includes(state.line)){
         // Ask where they board in the evening — Hoboken or Secaucus
-        await novaSay("One quick question — where do you board your evening train home?");
+        await novaSay("One quick question — where do you board your evening train home? We'll alert you on your home line train. The Secaucus↔NY Penn connection runs every 10–15 min during peak hours so you won't need a separate alert for that.");
         showHubCards();
         state.step = 'evening_hub';
       } else {
