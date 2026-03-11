@@ -423,7 +423,7 @@
         }
 
 
-        .schedule-btn {
+        .schedule-btn, .railroad-btn {
             flex: 1;
             padding: 0.5rem 0.25rem;
             border: 2px solid var(--border);
@@ -436,12 +436,12 @@
             cursor: pointer;
             transition: all 0.15s;
         }
-        .schedule-btn.active {
+        .schedule-btn.active, .railroad-btn.active {
             border-color: var(--primary);
             background: var(--primary);
             color: white;
         }
-        .schedule-btn:not(.active):hover {
+        .schedule-btn:not(.active):hover, .railroad-btn:not(.active):hover {
             border-color: var(--primary);
             color: var(--primary);
         }
@@ -668,8 +668,8 @@
                 <div id="railroad-selector" style="display:none;margin-bottom:1.5rem">
                     <label style="font-weight:600;display:block;margin-bottom:0.5rem">Select Railroad <span class="required">*</span></label>
                     <div style="display:flex;gap:0.5rem" id="railroad-toggle">
-                        <button type="button" class="schedule-btn active" data-railroad="njt">🚊 NJ Transit</button>
-                        <button type="button" class="schedule-btn" data-railroad="lirr">🚇 LIRR</button>
+                        <button type="button" class="railroad-btn active" data-railroad="njt">🚊 NJ Transit</button>
+                        <button type="button" class="railroad-btn" data-railroad="lirr">🚇 LIRR</button>
                     </div>
                 </div>
 
@@ -1013,9 +1013,9 @@
         }
 
         // Railroad toggle — NJT vs LIRR
-        document.querySelectorAll('#railroad-toggle .schedule-btn').forEach(btn => {
+        document.querySelectorAll('#railroad-toggle .railroad-btn').forEach(btn => {
             btn.addEventListener('click', () => {
-                document.querySelectorAll('#railroad-toggle .schedule-btn').forEach(b => b.classList.remove('active'));
+                document.querySelectorAll('#railroad-toggle .railroad-btn').forEach(b => b.classList.remove('active'));
                 btn.classList.add('active');
                 const isLirr = btn.dataset.railroad === 'lirr';
                 document.getElementById('subscribe-form').style.display = isLirr ? 'none' : '';
