@@ -1630,15 +1630,22 @@ let _lirrMorning = null;   // train number string
 let _lirrEvening = null;   // train number string
 
 async function handleLirr() {
-  await novaSay("🚇 Let me set up LIRR Port Washington Branch alerts for you! First — which station are you commuting from?");
+  await novaSay("🚇 I can set up LIRR alerts for the Babylon, Ronkonkoma, and Port Washington branches. Which station are you commuting from?");
   await delay(200);
   try {
     const res = await fetch(`${API_BASE}/lirr/stations`);
     if (!res.ok) throw new Error();
     const data = await res.json();
-    _lirrStations = data.stations || [];
+    // Flatten all branches into one list, prefixing with branch initial to distinguish shared stops
+    const branches = data.branches || {};
+    _lirrStations = [];
+    Object.entries(branches).forEach(([branch, stations]) => {
+      (stations || []).forEach(s => _lirrStations.push({id: s.id, name: s.name, branch}));
+    });
+    // Deduplicate by stop_id (keep first occurrence)
+    const seen = new Set();
+    _lirrStations = _lirrStations.filter(s => seen.has(s.id) ? false : seen.add(s.id));
     if (!_lirrStations.length) throw new Error('no stations');
-    // Show as chips (max 12 so they fit — Port Washington has ~11 stops)
     showChips(_lirrStations.map(s => ({name: s.name, code: s.id})), handleLirrStation);
   } catch (e) {
     await novaSay("Hmm, I couldn't load the LIRR stations right now. Try the main app instead!");

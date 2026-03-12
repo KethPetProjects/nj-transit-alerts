@@ -1104,12 +1104,19 @@
                 const res = await fetch(`${API_BASE}/lirr/stations`);
                 if (!res.ok) throw new Error();
                 const data = await res.json();
-                sel.innerHTML = '<option value="">Select your station...</option>';
-                (data.stations || []).forEach(s => {
-                    const opt = document.createElement('option');
-                    opt.value = s.id;
-                    opt.textContent = s.name;
-                    sel.appendChild(opt);
+                sel.innerHTML = '<option value="">Select your home station...</option>';
+                const branches = data.branches || {};
+                Object.entries(branches).forEach(([branch, stations]) => {
+                    if (!stations || !stations.length) return;
+                    const grp = document.createElement('optgroup');
+                    grp.label = `🚆 ${branch}`;
+                    stations.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.textContent = s.name;
+                        grp.appendChild(opt);
+                    });
+                    sel.appendChild(grp);
                 });
             } catch (e) {
                 sel.innerHTML = '<option value="">Error loading stations — refresh to try again</option>';
