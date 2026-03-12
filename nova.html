@@ -1622,6 +1622,137 @@ async function handlePostChip(opt){
   ], handlePostChip);
 }
 
+// ─── LIRR subscription flow ────────────────────────────────────────────────
+
+let _lirrStations = [];    // [{id, name}]
+let _lirrStation = null;   // {id, name}
+let _lirrMorning = null;   // train number string
+let _lirrEvening = null;   // train number string
+
+async function handleLirr() {
+  await novaSay("🚇 Let me set up LIRR Port Washington Branch alerts for you! First — which station are you commuting from?");
+  await delay(200);
+  try {
+    const res = await fetch(`${API_BASE}/lirr/stations`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    _lirrStations = data.stations || [];
+    if (!_lirrStations.length) throw new Error('no stations');
+    // Show as chips (max 12 so they fit — Port Washington has ~11 stops)
+    showChips(_lirrStations.map(s => ({name: s.name, code: s.id})), handleLirrStation);
+  } catch (e) {
+    await novaSay("Hmm, I couldn't load the LIRR stations right now. Try the main app instead!");
+    showChips([{name:'🌐 Open main app', code:'mainapp'},{name:'🔔 NJT alerts', code:'sub'}], handleMainMenu);
+  }
+}
+
+async function handleLirrStation(opt) {
+  addMessage('user', opt.name);
+  _lirrStation = {id: opt.code, name: opt.name};
+  await novaSay(`Great — ${opt.name}! Now pick your morning train toward Penn Station:`);
+  await delay(200);
+  try {
+    const d = new Date().getDay();
+    const sched = d===6?'saturday':d===0?'sunday':'weekday';
+    const res = await fetch(`${API_BASE}/lirr/trains/${encodeURIComponent(opt.code)}?schedule=${sched}`);
+    if (!res.ok) throw new Error();
+    const data = await res.json();
+    const outbound = (data.outbound||[]).slice(0, 10);
+    if (!outbound.length) throw new Error('no trains');
+    showChips(outbound.map(t => ({name: `#${t.id} at ${t.time}`, code: t.id, _train: t})), handleLirrMorning);
+    // Store for evening train fetch
+    window._lirrInbound = (data.inbound||[]).slice(0,10);
+  } catch(e) {
+    await novaSay("Couldn't load trains for that station. Try the main app for full LIRR schedule!");
+    showChips([{name:'🌐 Open main app', code:'mainapp'},{name:'⬅ Back', code:'lirr'}], handleMainMenu);
+  }
+}
+
+async function handleLirrMorning(opt) {
+  addMessage('user', opt.name);
+  _lirrMorning = opt.code;
+  const inbound = window._lirrInbound || [];
+  if (!inbound.length) {
+    await novaSay("No evening trains found. Please use the main app to complete setup.");
+    showChips([{name:'🌐 Open main app', code:'mainapp'}], handleMainMenu);
+    return;
+  }
+  await novaSay("Perfect! Now pick your evening train back from Penn Station:");
+  await delay(200);
+  showChips(inbound.map(t => ({name: `#${t.id} at ${t.time}`, code: t.id})), handleLirrEvening);
+}
+
+async function handleLirrEvening(opt) {
+  addMessage('user', opt.name);
+  _lirrEvening = opt.code;
+  await novaSay(`Looks good! ${_lirrStation.name} → Penn (Train #${_lirrMorning}) in the morning, Penn → ${_lirrStation.name} (Train #${_lirrEvening}) in the evening. What's your phone number? (needed to manage or unsubscribe)`);
+  state.step = 'lirr_phone';
+  document.getElementById('userInput').placeholder = 'Your 10-digit phone number';
+}
+
+async function handleLirrPhone(text) {
+  const digits = text.replace(/\D/g,'');
+  if (digits.length !== 10) {
+    showTyping();
+    const r = await callNova(`User entered "${text}" as their phone number, which doesn't look like a valid 10-digit US phone number. Politely ask them to re-enter it.`);
+    removeTyping();
+    await novaSay(parseNovaResponse(r).clean);
+    return;
+  }
+  const phone = '+1' + digits;
+  showTyping();
+  try {
+    const res = await fetch(`${API_BASE}/subscribe`, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({
+        phone,
+        morning_trains: [_lirrMorning],
+        evening_trains: [_lirrEvening],
+        delay_alerts: true,
+        ontime_alerts: true,
+        station: _lirrStation.id,
+        rail_system: 'LIRR'
+      })
+    });
+    removeTyping();
+    if (!res.ok) throw new Error((await res.json()).detail || 'subscribe failed');
+    const data = await res.json();
+    const topic = data.ntfy_topic || '';
+    await novaSay(`🎉 You're subscribed to LIRR Port Washington alerts! Your trains: #${_lirrMorning} (morning) and #${_lirrEvening} (evening from Penn).\n\nTo receive push notifications, install the free ntfy app and subscribe to your topic:`);
+    await delay(200);
+    // Show ntfy topic card
+    showNtfyCard(topic);
+    state.step = 'post';
+  } catch(e) {
+    removeTyping();
+    await novaSay(`Hmm, something went wrong: ${e.message}. Want to try again?`);
+    showChips([{name:'🔄 Try again', code:'lirr'},{name:'🌐 Open main app', code:'mainapp'}], handleMainMenu);
+  }
+}
+
+function showNtfyCard(topic) {
+  const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+  const openBtn = isIos ? '' : `<a href="ntfy://ntfy.sh/${topic}" style="display:block;margin-top:0.5rem;padding:0.5rem 1rem;background:var(--accent,#6750A4);color:#fff;border-radius:8px;text-decoration:none;text-align:center;font-size:0.9rem">📱 Open in ntfy app</a>`;
+  const iosHint = isIos ? `<p style="font-size:0.82rem;color:var(--text-muted,#666);margin-top:0.4rem">📋 Copy topic → open ntfy → tap + → paste → Subscribe</p>` : '';
+  const card = document.createElement('div');
+  card.style.cssText = 'background:var(--surface,#fff);border:1px solid var(--border,#ddd);border-radius:12px;padding:1rem;margin:0.5rem 0;font-size:0.9rem';
+  card.innerHTML = `<p style="margin-bottom:0.5rem;font-weight:600">Your ntfy topic:</p>
+    <div onclick="navigator.clipboard&&navigator.clipboard.writeText('${topic}');this.textContent='✅ Copied!';setTimeout(()=>{this.textContent='📋 Tap to copy topic';},2000)"
+         style="font-family:monospace;font-size:0.82rem;word-break:break-all;padding:0.5rem 0.75rem;background:var(--bg,#f5f5f5);border-radius:6px;cursor:pointer;margin-bottom:0.5rem">📋 Tap to copy topic</div>
+    <div style="font-family:monospace;font-size:0.78rem;word-break:break-all;padding:0.4rem 0.75rem;background:var(--bg,#f5f5f5);border-radius:6px;margin-bottom:0.5rem">${topic}</div>
+    ${openBtn}${iosHint}`;
+  document.getElementById('novaMessages').appendChild(card);
+  card.scrollIntoView({behavior:'smooth'});
+  // Show follow-up chips
+  setTimeout(() => {
+    showChips([
+      {name:'🔄 Set up another', code:'sub'},
+      {name:'🌐 Open main app', code:'mainapp'}
+    ], handleMainMenu);
+  }, 800);
+}
+
 // Main menu chip handler
 async function handleMainMenu(opt){
   addMessage('user', opt.name||opt.label);
@@ -1631,12 +1762,7 @@ async function handleMainMenu(opt){
     return;
   }
   if(opt.code==='lirr'){
-    await novaSay("LIRR alerts are coming soon! I'm still memorizing all the Nassau County stops 🗺️ Check back soon — in the meantime, I can set up NJ Transit alerts for you!");
-    await delay(300);
-    showChips([
-      {name:'🔔 Set up NJT alerts instead', code:'sub'},
-      {name:'🌐 Open main app', code:'mainapp'},
-    ], handleMainMenu);
+    await handleLirr();
     return;
   }
   if(opt.code==='sub'){
@@ -1799,7 +1925,7 @@ async function sendMessage(){
   addMessage('user', text);
 
   // Check for back/restart intent first — works from any step
-  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','phone','consent','confirm','unsub_phone','unsub_code','change_verify'];
+  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','phone','lirr_phone','consent','confirm','unsub_phone','unsub_code','change_verify'];
   if(isGoingBack(text) && backSteps.includes(state.step)){
     await goBack();
     return;
@@ -1866,6 +1992,7 @@ async function sendMessage(){
     case 'morning_time': await handleMorningTime(text); break;
     case 'evening_time': await handleEveningTime(text); break;
     case 'phone': await handlePhone(text); break;
+    case 'lirr_phone': await handleLirrPhone(text); break;
     case 'unsub_phone': await handleUnsubPhone(text); break;
     case 'unsub_code': await handleUnsubCode(text); break;
     case 'check_phone': await handleCheckSub(text); break;

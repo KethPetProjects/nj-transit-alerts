@@ -673,15 +673,70 @@
                     </div>
                 </div>
 
-                <!-- LIRR coming soon (shown when LIRR tab selected) -->
-                <div id="lirr-coming-soon" style="display:none;text-align:center;padding:2rem 0.5rem">
-                    <div style="font-size:3rem;margin-bottom:0.75rem">🚇</div>
-                    <h3 style="font-size:1.3rem;margin-bottom:0.5rem">LIRR Alerts — Coming Soon!</h3>
-                    <p style="color:var(--text-light);max-width:360px;margin:0 auto 1rem">Long Island Rail Road delay alerts are in the works. We're adding LIRR support — check back soon!</p>
-                    <div style="padding:0.75rem 1rem;background:#EFF7FF;border-radius:10px;font-size:0.85rem;color:#1565C0;max-width:360px;margin:0 auto">
-                        💡 In the meantime, <a href="nova.html" style="color:#1565C0;font-weight:600">chat with Ramiya</a> about NJ Transit alerts.
+                <!-- LIRR subscribe form (shown when LIRR tab selected) -->
+                <form id="lirr-subscribe-form" style="display:none">
+                    <p style="margin-bottom:1rem;font-size:0.9rem;color:var(--text-muted)">🚇 <strong>Port Washington Branch</strong> — Penn Station ↔ Port Washington</p>
+
+                    <!-- LIRR home station -->
+                    <div class="form-group">
+                        <label for="lirr-station">Your Home Station <span class="required">*</span></label>
+                        <select id="lirr-station" required>
+                            <option value="">Loading stations...</option>
+                        </select>
+                        <p class="help-text">The station you commute from</p>
                     </div>
-                </div>
+
+                    <!-- LIRR schedule type -->
+                    <div class="form-group" id="lirr-schedule-group" style="display:none">
+                        <label>Schedule Type <span class="required">*</span></label>
+                        <div style="display:flex;gap:0.5rem;margin-top:0.25rem" id="lirr-schedule-toggle">
+                            <button type="button" class="schedule-btn" id="lirr-sched-weekday" data-lirr-schedule="weekday">📅 Weekday</button>
+                            <button type="button" class="schedule-btn" id="lirr-sched-saturday" data-lirr-schedule="saturday">🏖️ Saturday</button>
+                            <button type="button" class="schedule-btn" id="lirr-sched-sunday" data-lirr-schedule="sunday">🌅 Sunday</button>
+                        </div>
+                    </div>
+
+                    <!-- LIRR morning trains (to Penn Station) -->
+                    <div class="form-group">
+                        <label>Train to Penn Station <span class="required">*</span></label>
+                        <div class="train-picker" id="lirr-morning-picker">
+                            <div class="train-picker-placeholder">Select station first...</div>
+                        </div>
+                        <p class="help-text">Tap to select up to 3 — #1 is primary, #2 & #3 are backups</p>
+                    </div>
+
+                    <!-- LIRR evening trains (from Penn Station) -->
+                    <div class="form-group">
+                        <label>Train from Penn Station <span class="required">*</span></label>
+                        <div class="train-picker" id="lirr-evening-picker">
+                            <div class="train-picker-placeholder">Select station first...</div>
+                        </div>
+                        <p class="help-text">Tap to select up to 3 — #1 is primary, #2 & #3 are backups</p>
+                    </div>
+
+                    <!-- Phone -->
+                    <div class="form-group">
+                        <label for="lirr-phone">Phone Number</label>
+                        <input type="tel" id="lirr-phone" placeholder="(555) 123-4567" autocomplete="tel" required>
+                        <p class="help-text">Used to identify your subscription — needed to manage or unsubscribe</p>
+                    </div>
+
+                    <!-- Notification Preferences -->
+                    <div class="notification-prefs">
+                        <h3>📱 Notification Preferences</h3>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="lirr-delay-alerts" checked>
+                            <label for="lirr-delay-alerts">Delay & cancellation alerts (sent immediately)</label>
+                        </div>
+                        <div class="checkbox-group">
+                            <input type="checkbox" id="lirr-ontime-alerts" checked>
+                            <label for="lirr-ontime-alerts">On-time confirmations (30 min before departure)</label>
+                        </div>
+                    </div>
+
+                    <p class="error-msg" id="lirr-subscribe-error"></p>
+                    <button type="submit" class="btn btn-primary">Subscribe to LIRR Alerts</button>
+                </form>
 
                 <form id="subscribe-form">
                     <!-- Line/Corridor Selection FIRST -->
@@ -1012,6 +1067,22 @@
             } catch (e) { /* silently ignore — defaults to NJT-only */ }
         }
 
+        // LIRR state
+        let _lirrSelectedTrains = { morning: [], evening: [] };
+        let _lirrCurrentStation = null;
+        let _lirrSchedule = getTodaySchedule();
+
+        // Init LIRR schedule buttons
+        document.querySelectorAll('#lirr-schedule-toggle .schedule-btn').forEach(btn => {
+            btn.classList.toggle('active', btn.dataset.lirrSchedule === _lirrSchedule);
+            btn.addEventListener('click', async () => {
+                _lirrSchedule = btn.dataset.lirrSchedule;
+                document.querySelectorAll('#lirr-schedule-toggle .schedule-btn').forEach(b => b.classList.remove('active'));
+                btn.classList.add('active');
+                if (_lirrCurrentStation) await loadLirrTrains(_lirrCurrentStation, _lirrSchedule);
+            });
+        });
+
         // Railroad toggle — NJT vs LIRR
         document.querySelectorAll('#railroad-toggle .railroad-btn').forEach(btn => {
             btn.addEventListener('click', () => {
@@ -1019,8 +1090,186 @@
                 btn.classList.add('active');
                 const isLirr = btn.dataset.railroad === 'lirr';
                 document.getElementById('subscribe-form').style.display = isLirr ? 'none' : '';
-                document.getElementById('lirr-coming-soon').style.display = isLirr ? '' : 'none';
+                document.getElementById('lirr-subscribe-form').style.display = isLirr ? '' : 'none';
+                if (isLirr && document.getElementById('lirr-station').options.length <= 1) {
+                    loadLirrStations();
+                }
             });
+        });
+
+        async function loadLirrStations() {
+            const sel = document.getElementById('lirr-station');
+            sel.innerHTML = '<option value="">Loading...</option>';
+            try {
+                const res = await fetch(`${API_BASE}/lirr/stations`);
+                if (!res.ok) throw new Error();
+                const data = await res.json();
+                sel.innerHTML = '<option value="">Select your station...</option>';
+                (data.stations || []).forEach(s => {
+                    const opt = document.createElement('option');
+                    opt.value = s.id;
+                    opt.textContent = s.name;
+                    sel.appendChild(opt);
+                });
+            } catch (e) {
+                sel.innerHTML = '<option value="">Error loading stations — refresh to try again</option>';
+            }
+        }
+
+        document.getElementById('lirr-station').addEventListener('change', async function() {
+            const stopId = this.value;
+            if (stopId) {
+                document.getElementById('lirr-schedule-group').style.display = '';
+                await loadLirrTrains(stopId, _lirrSchedule);
+            } else {
+                _resetLirrPickers('Select station first...');
+                document.getElementById('lirr-schedule-group').style.display = 'none';
+            }
+        });
+
+        async function loadLirrTrains(stopId, schedule) {
+            _lirrCurrentStation = stopId;
+            _resetLirrPickers('Loading trains...');
+            try {
+                const res = await fetch(`${API_BASE}/lirr/trains/${encodeURIComponent(stopId)}?schedule=${schedule}`);
+                if (!res.ok) throw new Error();
+                const trains = await res.json();
+                _renderLirrPicker(trains.outbound || [], 'morning');
+                _renderLirrPicker(trains.inbound || [], 'evening');
+            } catch (e) {
+                _resetLirrPickers('Error loading trains — try again');
+            }
+        }
+
+        function _resetLirrPickers(msg) {
+            _lirrSelectedTrains = { morning: [], evening: [] };
+            document.getElementById('lirr-morning-picker').innerHTML = `<div class="train-picker-placeholder">${msg}</div>`;
+            document.getElementById('lirr-evening-picker').innerHTML = `<div class="train-picker-placeholder">${msg}</div>`;
+            document.getElementById('lirr-morning-picker').classList.remove('has-selection');
+            document.getElementById('lirr-evening-picker').classList.remove('has-selection');
+        }
+
+        function _renderLirrPicker(trains, type) {
+            const picker = document.getElementById(`lirr-${type}-picker`);
+            _lirrSelectedTrains[type] = [];
+            picker.classList.remove('has-selection');
+
+            if (!trains || trains.length === 0) {
+                picker.innerHTML = '<div class="train-picker-placeholder">No trains found</div>';
+                return;
+            }
+
+            const rowsDiv = document.createElement('div');
+            rowsDiv.className = 'train-rows';
+            trains.forEach(train => {
+                const row = document.createElement('div');
+                row.className = 'train-row';
+                row.dataset.trainId = train.id;
+                const dest = train.destination || (type === 'morning' ? 'Penn Station' : 'Home');
+                row.innerHTML = `<span class="tr-badge"></span><span class="tr-num">#${train.id}</span><span class="tr-time">${train.time}</span><span class="tr-dest">→ ${dest}</span>`;
+                row.addEventListener('click', () => {
+                    const idx = _lirrSelectedTrains[type].findIndex(t => t.id === train.id);
+                    if (idx !== -1) {
+                        _lirrSelectedTrains[type].splice(idx, 1);
+                    } else {
+                        if (_lirrSelectedTrains[type].length >= 3) return;
+                        _lirrSelectedTrains[type].push(train);
+                    }
+                    picker.querySelectorAll('.train-row').forEach(r => {
+                        r.classList.remove('selected');
+                        r.querySelector('.tr-badge').textContent = '';
+                    });
+                    _lirrSelectedTrains[type].forEach((t, i) => {
+                        picker.querySelectorAll('.train-row').forEach(r => {
+                            if (r.dataset.trainId === t.id) {
+                                r.classList.add('selected');
+                                r.querySelector('.tr-badge').textContent = i + 1;
+                            }
+                        });
+                    });
+                    picker.classList.toggle('has-selection', _lirrSelectedTrains[type].length > 0);
+                });
+                rowsDiv.appendChild(row);
+            });
+
+            const hint = document.createElement('div');
+            hint.className = 'train-picker-hint';
+            hint.textContent = 'Tap to select up to 3 — #1 is your primary train';
+            picker.innerHTML = '';
+            picker.appendChild(rowsDiv);
+            picker.appendChild(hint);
+        }
+
+        // LIRR form submission
+        document.getElementById('lirr-subscribe-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const stopId = document.getElementById('lirr-station').value;
+            const morningTrains = _lirrSelectedTrains.morning.map(t => t.id);
+            const eveningTrains = _lirrSelectedTrains.evening.map(t => t.id);
+            const phone = document.getElementById('lirr-phone').value;
+            const delayAlerts = document.getElementById('lirr-delay-alerts').checked;
+            const ontimeAlerts = document.getElementById('lirr-ontime-alerts').checked;
+            const errorEl = document.getElementById('lirr-subscribe-error');
+
+            const digits = phone.replace(/\D/g, '');
+            if (!stopId || morningTrains.length === 0 || eveningTrains.length === 0 || !phone.trim()) {
+                const missing = [];
+                if (!stopId) missing.push('home station');
+                if (morningTrains.length === 0) missing.push('train to Penn');
+                if (eveningTrains.length === 0) missing.push('train from Penn');
+                if (!phone.trim()) missing.push('phone number');
+                errorEl.textContent = 'Please fill in: ' + missing.join(', ');
+                errorEl.classList.add('show');
+                return;
+            }
+            if (digits.length !== 10) {
+                errorEl.textContent = 'Please enter a valid 10-digit phone number.';
+                errorEl.classList.add('show');
+                return;
+            }
+            errorEl.classList.remove('show');
+
+            const submitBtn = this.querySelector('button[type="submit"]');
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Sending...';
+
+            const payload = {
+                phone: '+1' + digits,
+                morning_trains: morningTrains,
+                evening_trains: eveningTrains,
+                delay_alerts: delayAlerts,
+                ontime_alerts: ontimeAlerts,
+                station: stopId,
+                rail_system: 'LIRR'
+            };
+
+            try {
+                const res = await fetch(`${API_BASE}/subscribe`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok) throw new Error(data.detail || 'Subscription failed');
+
+                // Reuse the NJT ntfy setup box
+                subscribeNtfyTopic = data.ntfy_topic || '';
+                document.getElementById('ntfy-topic-text').textContent = subscribeNtfyTopic;
+                const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
+                const openBtn = document.getElementById('ntfy-open-btn');
+                if (!isIos && subscribeNtfyTopic) {
+                    openBtn.href = `ntfy://ntfy.sh/${subscribeNtfyTopic}`;
+                    openBtn.style.display = '';
+                }
+                document.getElementById('ntfy-ios-hint').style.display = isIos ? '' : 'none';
+                document.getElementById('lirr-subscribe-form').style.display = 'none';
+                document.getElementById('ntfy-setup-box').style.display = '';
+            } catch (err) {
+                errorEl.textContent = err.message || 'Something went wrong. Please try again.';
+                errorEl.classList.add('show');
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Subscribe to LIRR Alerts';
+            }
         });
 
         async function loadLines() {
