@@ -1664,11 +1664,11 @@ async function handleLirrStation(opt) {
     const res = await fetch(`${API_BASE}/lirr/trains/${encodeURIComponent(opt.code)}?schedule=${sched}`);
     if (!res.ok) throw new Error();
     const data = await res.json();
-    const outbound = (data.outbound||[]).slice(0, 10);
+    const outbound = (data.outbound||[]).slice(0, 30);
     if (!outbound.length) throw new Error('no trains');
     showChips(outbound.map(t => ({name: `#${t.id} at ${t.time}`, code: t.id, _train: t})), handleLirrMorning);
     // Store for evening train fetch
-    window._lirrInbound = (data.inbound||[]).slice(0,10);
+    state._lirrInbound = (data.inbound||[]).slice(0,30);
   } catch(e) {
     await novaSay("Couldn't load trains for that station. Try the main app for full LIRR schedule!");
     showChips([{name:'🌐 Open main app', code:'mainapp'},{name:'⬅ Back', code:'lirr'}], handleMainMenu);
@@ -1678,7 +1678,7 @@ async function handleLirrStation(opt) {
 async function handleLirrMorning(opt) {
   addMessage('user', opt.name);
   _lirrMorning = opt.code;
-  const inbound = window._lirrInbound || [];
+  const inbound = state._lirrInbound || [];
   if (!inbound.length) {
     await novaSay("No evening trains found. Please use the main app to complete setup.");
     showChips([{name:'🌐 Open main app', code:'mainapp'}], handleMainMenu);
@@ -1708,27 +1708,34 @@ async function handleLirrPhone(text) {
   }
   const phone = '+1' + digits;
   showTyping();
+  const body = {
+    phone,
+    morning_trains: [_lirrMorning],
+    evening_trains: [_lirrEvening],
+    delay_alerts: true,
+    ontime_alerts: true,
+    station: _lirrStation.id,
+    rail_system: 'LIRR'
+  };
   try {
     const res = await fetch(`${API_BASE}/subscribe`, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({
-        phone,
-        morning_trains: [_lirrMorning],
-        evening_trains: [_lirrEvening],
-        delay_alerts: true,
-        ontime_alerts: true,
-        station: _lirrStation.id,
-        rail_system: 'LIRR'
-      })
+      body: JSON.stringify(body)
     });
     removeTyping();
     if (!res.ok) throw new Error((await res.json()).detail || 'subscribe failed');
     const data = await res.json();
+    if (data.requires_verification) {
+      state.pendingSubscribeBody = body;
+      state.step = 'change_verify';
+      document.getElementById('userInput').placeholder = '6-digit code';
+      await novaSay("🔐 You already have an active subscription! I just sent a 6-digit code to your ntfy app to confirm the switch to LIRR. What's the code?");
+      return;
+    }
     const topic = data.ntfy_topic || '';
-    await novaSay(`🎉 You're subscribed to LIRR Port Washington alerts! Your trains: #${_lirrMorning} (morning) and #${_lirrEvening} (evening from Penn).\n\nTo receive push notifications, install the free ntfy app and subscribe to your topic:`);
+    await novaSay(`🎉 You're subscribed to LIRR ${_lirrStation.name} alerts! Your trains: #${_lirrMorning} (morning) and #${_lirrEvening} (evening from Penn).\n\nTo receive push notifications, install the free ntfy app and subscribe to your topic:`);
     await delay(200);
-    // Show ntfy topic card
     showNtfyCard(topic);
     state.step = 'post';
   } catch(e) {
@@ -1830,7 +1837,7 @@ async function selectSchedule(opt){
 }
 
 function resetState(){
-  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, morningTrains:[], eveningTrains:[], phone:null, ntfy_topic:null, schedule:'weekday', allInbound:[], allTrainsData:null, unsubPhone:null, pendingSubscribeBody:null, eveningHub:null};
+  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, morningTrains:[], eveningTrains:[], phone:null, ntfy_topic:null, schedule:'weekday', allInbound:[], allTrainsData:null, unsubPhone:null, pendingSubscribeBody:null, eveningHub:null, _lirrInbound:[]};
   history = [];
 }
 
