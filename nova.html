@@ -1652,6 +1652,7 @@ async function handleLirr() {
     const seen = new Set();
     _lirrStations = _lirrStations.filter(s => seen.has(s.id) ? false : seen.add(s.id));
     if (!_lirrStations.length) throw new Error('no stations');
+    state.step = 'lirr_station';
     showChips(_lirrStations.map(s => ({name: s.name, code: s.id})), handleLirrStation);
   } catch (e) {
     await novaSay("Hmm, I couldn't load the LIRR stations right now. Try the main app instead!");
@@ -1672,9 +1673,10 @@ async function handleLirrStation(opt) {
     const data = await res.json();
     const outbound = (data.outbound||[]).slice(0, 30);
     if (!outbound.length) throw new Error('no trains');
-    showChips(outbound.map(t => ({name: `${t.time} ${t.line||''}`.trim() + ` (#${t.id})`, code: t.id, _train: t})), handleLirrMorning);
-    // Store for evening train fetch
+    state._lirrOutbound = outbound;
     state._lirrInbound = (data.inbound||[]).slice(0,30);
+    state.step = 'lirr_morning';
+    showChips(outbound.map(t => ({name: `${t.time} ${t.line||''}`.trim() + ` (#${t.id})`, code: t.id, _train: t})), handleLirrMorning);
   } catch(e) {
     await novaSay("Couldn't load trains for that station. Try the main app for full LIRR schedule!");
     showChips([{name:'🌐 Open main app', code:'mainapp'},{name:'⬅ Back', code:'lirr'}], handleMainMenu);
@@ -1691,6 +1693,7 @@ async function handleLirrMorning(opt) {
     showChips([{name:'🌐 Open main app', code:'mainapp'}], handleMainMenu);
     return;
   }
+  state.step = 'lirr_evening';
   await novaSay("Perfect! Now pick your evening train back from Penn Station:");
   await delay(200);
   showChips(inbound.map(t => ({name: `${t.time} ${t.destination||t.line||''}`.trim() + ` (#${t.id})`, code: t.id})), handleLirrEvening);
@@ -1845,7 +1848,7 @@ async function selectSchedule(opt){
 }
 
 function resetState(){
-  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, morningTrains:[], eveningTrains:[], phone:null, ntfy_topic:null, schedule:'weekday', allInbound:[], allTrainsData:null, unsubPhone:null, pendingSubscribeBody:null, eveningHub:null, _lirrInbound:[]};
+  state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, morningTrains:[], eveningTrains:[], phone:null, ntfy_topic:null, schedule:'weekday', allInbound:[], allTrainsData:null, unsubPhone:null, pendingSubscribeBody:null, eveningHub:null, _lirrInbound:[], _lirrOutbound:[]};
   _lirrStation = null; _lirrMorning = null; _lirrMorningLabel = null; _lirrEvening = null; _lirrEveningLabel = null;
   history = [];
 }
@@ -1871,6 +1874,10 @@ function getStepBack(step){
     'confirm': 'phone',
     'unsub_code': 'unsub_phone',
     'change_verify': 'confirm',
+    'lirr_station': 'welcome',
+    'lirr_morning': 'lirr_station',
+    'lirr_evening': 'lirr_morning',
+    'lirr_phone': 'lirr_evening',
   };
   return backMap[step] || 'welcome';
 }
@@ -1931,12 +1938,38 @@ async function goBack(){
       await novaSay("No problem! What's the phone number on your subscription?");
       document.getElementById('userInput').placeholder='Your phone number';
       break;
+    case 'lirr_station':
+      _lirrStation = null; _lirrMorning = null; _lirrMorningLabel = null; _lirrEvening = null; _lirrEveningLabel = null;
+      state._lirrOutbound = []; state._lirrInbound = [];
+      state.step = 'lirr_station';
+      await novaSay("Sure! Which LIRR station do you commute from?");
+      if (_lirrStations.length) {
+        showChips(_lirrStations.map(s => ({name: s.name, code: s.id})), handleLirrStation);
+      } else {
+        await handleLirr();
+      }
+      break;
+    case 'lirr_morning':
+      _lirrMorning = null; _lirrMorningLabel = null; _lirrEvening = null; _lirrEveningLabel = null;
+      state.step = 'lirr_morning';
+      await novaSay("No problem! Pick your morning train toward Penn Station:");
+      showChips((state._lirrOutbound||[]).map(t => ({name: `${t.time} ${t.line||''}`.trim() + ` (#${t.id})`, code: t.id, _train: t})), handleLirrMorning);
+      break;
+    case 'lirr_evening':
+      _lirrEvening = null; _lirrEveningLabel = null;
+      state.step = 'lirr_evening';
+      await novaSay("No problem! Pick your evening train from Penn Station:");
+      showChips((state._lirrInbound||[]).map(t => ({name: `${t.time} ${t.destination||t.line||''}`.trim() + ` (#${t.id})`, code: t.id})), handleLirrEvening);
+      break;
     case 'welcome':
     default:
       resetState();
       await novaSay("No problem, let's start fresh! What would you like to do?");
       state.step='welcome';
-      showChips([{name:'Subscribe to alerts',code:'sub'},{name:'Unsubscribe',code:'unsub'},{name:'Check my subscription',code:'check'}], handleMainMenu);
+      const wChips = [{name:'🔔 NJT alerts', code:'sub'}];
+      if (_lirrEnabled) wChips.push({name:'🚇 LIRR alerts', code:'lirr'});
+      wChips.push({name:'🔕 Unsubscribe', code:'unsub'}, {name:'📋 Check my subscription', code:'check'});
+      showChips(wChips, handleMainMenu);
   }
 }
 
@@ -1948,7 +1981,7 @@ async function sendMessage(){
   addMessage('user', text);
 
   // Check for back/restart intent first — works from any step
-  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','phone','lirr_phone','consent','confirm','unsub_phone','unsub_code','change_verify'];
+  const backSteps = ['line','station','schedule','morning_time','morning_train','evening_time','evening_train','phone','lirr_station','lirr_morning','lirr_evening','lirr_phone','consent','confirm','unsub_phone','unsub_code','change_verify'];
   if(isGoingBack(text) && backSteps.includes(state.step)){
     await goBack();
     return;
