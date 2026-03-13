@@ -1502,7 +1502,8 @@ async function handleUnsubPhone(text){
       state.unsubPhone=e164;
       // Show train details directly, then send code via ntfy
       const fmtSub = (arr, single) => { const l=(arr&&arr.length)?arr:(single?[single]:[]); return l.map((t,i)=>i===0?`#${t}`:`+ #${t}`).join(', ')||'—'; };
-      await novaSay(`Found your subscription:\n\n🌅 Morning: ${fmtSub(sub.morning_trains,sub.morning_train)}\n🌆 Evening: ${fmtSub(sub.evening_trains,sub.evening_train)}`);
+      const railLabel = sub.rail_system === 'LIRR' ? '🚇 LIRR' : '🚊 NJ Transit';
+      await novaSay(`Found your ${railLabel} subscription:\n\n🌅 Morning: ${fmtSub(sub.morning_trains,sub.morning_train)}\n🌆 Evening: ${fmtSub(sub.evening_trains,sub.evening_train)}`);
       // Send the verification code to their ntfy topic
       await fetch(`${API_BASE}/unsubscribe/send-code`, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify({phone:e164})});
       const resp = await callNova(`The user wants to unsubscribe. We found their subscription and just sent a 6-digit code to their ntfy app as a push notification. Tell them to check their ntfy notification for the code and enter it here to confirm. Be warm but a little sad about them leaving 😢. Keep it short.`);
