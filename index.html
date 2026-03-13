@@ -1240,7 +1240,7 @@
             submitBtn.disabled = true;
             submitBtn.textContent = 'Sending...';
 
-            const payload = {
+            subscribePayload = {
                 phone: '+1' + digits,
                 morning_trains: morningTrains,
                 evening_trains: eveningTrains,
@@ -1254,23 +1254,24 @@
                 const res = await fetch(`${API_BASE}/subscribe`, {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify(payload)
+                    body: JSON.stringify(subscribePayload)
                 });
                 const data = await res.json();
                 if (!res.ok) throw new Error(data.detail || 'Subscription failed');
 
-                // Reuse the NJT ntfy setup box
-                subscribeNtfyTopic = data.ntfy_topic || '';
-                document.getElementById('ntfy-topic-text').textContent = subscribeNtfyTopic;
-                const isIos = /iPad|iPhone|iPod/.test(navigator.userAgent) && !window.MSStream;
-                const openBtn = document.getElementById('ntfy-open-btn');
-                if (!isIos && subscribeNtfyTopic) {
-                    openBtn.href = `ntfy://ntfy.sh/${subscribeNtfyTopic}`;
-                    openBtn.style.display = '';
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Subscribe to LIRR Alerts';
+
+                if (data.requires_verification) {
+                    document.getElementById('lirr-subscribe-form').style.display = 'none';
+                    document.getElementById('change-verify-code').value = '';
+                    document.getElementById('change-verify-error').classList.remove('show');
+                    document.getElementById('change-verify-box').classList.add('show');
+                    return;
                 }
-                document.getElementById('ntfy-ios-hint').style.display = isIos ? '' : 'none';
+
                 document.getElementById('lirr-subscribe-form').style.display = 'none';
-                document.getElementById('ntfy-setup-box').style.display = '';
+                _showNtfySetupBox(data);
             } catch (err) {
                 errorEl.textContent = err.message || 'Something went wrong. Please try again.';
                 errorEl.classList.add('show');
@@ -1763,7 +1764,11 @@
 
         function cancelChangeVerify() {
             document.getElementById('change-verify-box').classList.remove('show');
-            document.getElementById('subscribe-form').style.display = '';
+            if (subscribePayload && subscribePayload.rail_system === 'LIRR') {
+                document.getElementById('lirr-subscribe-form').style.display = '';
+            } else {
+                document.getElementById('subscribe-form').style.display = '';
+            }
         }
 
         function _showNtfySetupBox(data) {
