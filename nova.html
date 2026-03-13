@@ -1564,12 +1564,15 @@ async function handleCheckSub(text){
         <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value">${((arr,s)=>{const l=(arr&&arr.length)?arr:(s?[s]:[]);return l.map((t,i)=>i===0?`#${t}`:`+ #${t}`).join(', ')||'—'})(sub.morning_trains,sub.morning_train)}</span></div>
         <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value">${((arr,s)=>{const l=(arr&&arr.length)?arr:(s?[s]:[]);return l.map((t,i)=>i===0?`#${t}`:`+ #${t}`).join(', ')||'—'})(sub.evening_trains,sub.evening_train)}</span></div>
         <div class="summary-row"><span class="summary-label">STATUS</span><span class="summary-value" style="color:var(--success)">● ${sub.status?.toUpperCase()}</span></div>`;
+      const railSystem = sub.rail_system || 'NJT';
+      const railLabel = railSystem === 'LIRR' ? '🚇 LIRR' : '🚊 NJ Transit';
+      const updateCode = railSystem === 'LIRR' ? 'lirr' : 'sub';
       const resp = await callNova("Found the subscription. Confirm it's active and ask if they need anything else.");
       await novaSay(parseNovaResponse(resp).clean, card);
       state.step='post';
       showChips([
         {name:'🔕 Unsubscribe',code:'unsub'},
-        {name:'🔄 Update trains',code:'sub'},
+        {name:`🔄 Update trains (${railLabel})`,code:updateCode},
         {name:'🌐 Open main app',code:'mainapp'}
       ], handleMainMenu);
     } else {
