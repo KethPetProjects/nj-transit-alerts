@@ -1630,7 +1630,7 @@ let _lirrMorning = null;   // train number string
 let _lirrEvening = null;   // train number string
 
 async function handleLirr() {
-  await novaSay("🚇 I can set up LIRR alerts for the Babylon, Ronkonkoma, and Port Washington branches. Which station are you commuting from?");
+  await novaSay("🚇 I can set up LIRR alerts for the Babylon, Ronkonkoma, Long Beach, Port Washington, and Port Jefferson branches. Which station are you commuting from?");
   await delay(200);
   try {
     const res = await fetch(`${API_BASE}/lirr/stations`);
