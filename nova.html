@@ -2086,17 +2086,20 @@ async function sendMessage(){
 
 // ── Init ───────────────────────────────────────────────────
 (async()=>{
-  // Fetch feature flags silently
-  try {
-    const cfgRes = await fetch(`${API_BASE}/config`);
-    if (cfgRes.ok) { const cfg = await cfgRes.json(); _lirrEnabled = cfg.lirr_enabled || false; }
-  } catch(e) {}
-
-  const weather = await fetchWeather();
+  // Fetch config + weather in parallel, both with 3s timeout
+  const [cfgResult, weatherResult] = await Promise.allSettled([
+    (async()=>{
+      const _cc = new AbortController();
+      setTimeout(() => _cc.abort(), 3000);
+      const r = await fetch(`${API_BASE}/config`, {signal: _cc.signal});
+      if (r.ok) { const cfg = await r.json(); _lirrEnabled = cfg.lirr_enabled || false; }
+    })(),
+    fetchWeather()
+  ]);
   state.timeOfDay = getTimeOfDay();
   const greetings = {morning:'Good morning', afternoon:'Good afternoon', evening:'Good evening', night:'Hey night owl'};
   const greeting = greetings[state.timeOfDay];
-  const weatherLine = weather ? getWeatherContext() : '';
+  const weatherLine = (weatherResult.status === 'fulfilled' && weatherResult.value) ? getWeatherContext() : '';
 
   const initMsg = `${greeting}! I'm Ramiya, your NJ Transit AI assistant.${weatherLine}\n\nI can help you set up delay alerts, manage your subscription, or answer commute questions. What do you need?`;
 
