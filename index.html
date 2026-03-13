@@ -373,14 +373,32 @@
         }
 
         /* Nova Feature Section */
-        .nova-feature {
+        /* ── Two-column layout ── */
+        .layout-grid {
+            display: grid;
+            grid-template-columns: 1fr 300px;
+            gap: 1.25rem;
+            align-items: start;
+        }
+
+        .sidebar-col {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+            position: sticky;
+            top: 1rem;
+        }
+
+        /* Ramiya sidebar card */
+        .nova-sidebar {
             background: linear-gradient(135deg, #0D0D14 0%, #1A1020 100%);
-            padding: 2.5rem 2rem;
+            border-radius: 16px;
+            padding: 1.25rem;
             position: relative;
             overflow: hidden;
         }
 
-        .nova-feature::before {
+        .nova-sidebar::before {
             content: '';
             position: absolute;
             inset: 0;
@@ -389,25 +407,41 @@
             background-size: 30px 30px;
         }
 
-        .nova-feature-inner {
-            max-width: 900px;
-            margin: 0 auto;
-            display: flex;
-            align-items: center;
-            gap: 3rem;
+        .nova-sidebar-inner {
             position: relative;
             z-index: 1;
-        }
-
-        .nova-feature-left {
-            flex: 1;
             display: flex;
-            align-items: center;
-            gap: 1.5rem;
+            gap: 0.875rem;
+            align-items: flex-start;
         }
 
-        .nova-feature-text {
+        .nova-sidebar-avatar {
+            width: 48px;
+            height: 48px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid rgba(230,57,70,0.4);
+            flex-shrink: 0;
+        }
+
+        .nova-sidebar-text {
             flex: 1;
+            min-width: 0;
+        }
+
+        /* How it works sidebar */
+        .info-sidebar {
+            background: linear-gradient(135deg, #E3F2FD 0%, #BBDEFB 100%);
+            border-left: 4px solid var(--secondary);
+            padding: 1rem;
+            border-radius: 8px;
+            font-size: 0.875rem;
+            color: var(--text);
+        }
+
+        .info-sidebar ol {
+            margin: 0.4rem 0 0 1.1rem;
+            line-height: 1.7;
         }
 
         .nova-badge {
@@ -426,10 +460,10 @@
         }
 
         .nova-title {
-            font-size: 2rem;
+            font-size: 1.25rem;
             font-weight: 700;
             color: white;
-            margin-bottom: 0.75rem;
+            margin-bottom: 0.4rem;
             line-height: 1.2;
         }
 
@@ -440,17 +474,18 @@
 
         .nova-desc {
             color: #9090A8;
-            font-size: 0.95rem;
-            line-height: 1.6;
-            margin-bottom: 1.5rem;
-            max-width: 560px;
+            font-size: 0.82rem;
+            line-height: 1.5;
+            margin-bottom: 0.875rem;
+            max-width: 100%;
         }
 
         .nova-cta {
             display: inline-flex;
             align-items: center;
-            gap: 0.75rem;
-            padding: 0.75rem 1.75rem;
+            gap: 0.5rem;
+            padding: 0.55rem 1.1rem;
+            font-size: 0.85rem;
             background: #E63946;
             color: white;
             border-radius: 10px;
@@ -533,11 +568,19 @@
             color: var(--primary);
         }
 
-        @media (max-width: 768px) {
-            .nova-title { font-size: 1.6rem; }
-            .nova-feature-left { flex-direction: column; align-items: flex-start; }
-            .nova-avatar-img { width: 64px; height: 64px; }
-            .nova-desc { max-width: 100%; }
+        @media (max-width: 860px) {
+            .layout-grid {
+                grid-template-columns: 1fr;
+            }
+            .sidebar-col {
+                position: static;
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            .nova-sidebar, .info-sidebar {
+                flex: 1;
+                min-width: 220px;
+            }
             .card { padding: 1.25rem; }
             .tabs { gap: 0; }
             .tab { padding: 0.75rem 1rem; flex: 1; text-align: center; font-size: 1rem; }
@@ -552,21 +595,9 @@
             .train-logo svg { width: 36px; height: 36px; }
             .header-badge { font-size: 0.68rem; padding: 0.15rem 0.5rem; }
 
-            /* Nova strip — horizontal row, no description */
-            .nova-feature { padding: 0.75rem 1rem; }
-            .nova-feature-inner { gap: 0; }
-            .nova-feature-left {
-                flex-direction: row !important;
-                align-items: center !important;
-                gap: 0.75rem;
-                width: 100%;
-            }
-            .nova-avatar-img { width: 40px !important; height: 40px !important; flex-shrink: 0; }
-            .nova-badge { display: none; }
-            .nova-title { font-size: 1rem !important; margin-bottom: 0; }
-            .nova-desc { display: none; }
-            .nova-cta { padding: 0.5rem 1rem; font-size: 0.8rem; white-space: nowrap; }
-            .nova-feature-text { display: flex; align-items: center; gap: 0.75rem; flex: 1; }
+            /* Sidebar stacks vertically on small phones */
+            .sidebar-col { flex-direction: column; }
+            .nova-sidebar, .info-sidebar { min-width: unset; }
 
             /* Tighter container + card */
             .container { margin: -20px auto 16px; }
@@ -723,25 +754,9 @@
         </div>
     </div>
 
-    <!-- Nova AI Feature Card -->
-    <div class="nova-feature">
-      <div class="nova-feature-inner">
-        <div class="nova-feature-left">
-          <img src="Ramiya_avatar.jpg" alt="Ramiya" class="nova-avatar-img">
-          <div class="nova-feature-text">
-            <div class="nova-badge">✦ AI-POWERED</div>
-            <h2 class="nova-title">Meet <span class="nova-highlight">Ramiya</span></h2>
-            <p class="nova-desc">Skip the form. Chat with Ramiya — our AI assistant that sets up your alerts through natural conversation. Smarter, faster, more fun.</p>
-            <a href="nova.html" class="nova-cta">
-              <span>Chat with Ramiya</span>
-              <span class="nova-cta-arrow">→</span>
-            </a>
-          </div>
-        </div>
-      </div>
-    </div>
-
     <div class="container">
+        <div class="layout-grid">
+        <div class="form-col">
         <div class="card">
             <div class="tabs">
                 <button class="tab active" onclick="showTab('subscribe')">Subscribe</button>
@@ -750,15 +765,6 @@
 
             <!-- Subscribe Tab -->
             <div class="tab-content active" id="subscribe-tab">
-                <div class="info-box">
-                    <strong>How it works:</strong>
-                    <ol style="margin:0.5rem 0 0 1.2rem;line-height:1.8">
-                        <li>Pick your train line, home station, and the trains you take each way.</li>
-                        <li>Enter your phone number — it's your account ID so you can manage or cancel later. <strong>No SMS will be sent.</strong> Alerts are delivered via the free <a href="https://ntfy.sh" target="_blank" style="color:inherit;text-decoration:underline">ntfy app</a>.</li>
-                        <li>We check your trains every 2 minutes. You'll get an alert if there's a <strong>delay or cancellation</strong>, and an <strong>on-time heads-up</strong> ~30 minutes before your train departs your station.</li>
-                    </ol>
-                    <p style="margin-top:0.75rem;padding-top:0.75rem;border-top:1px solid rgba(0,0,0,0.08)">💡 <strong>Tip:</strong> Share your alert topic with your spouse or family — so they know you're running late before you even get off the train.</p>
-                </div>
 
                 <!-- Railroad selector (shown only if lirr_enabled) -->
                 <div id="railroad-selector" style="display:none;margin-bottom:1.5rem">
@@ -1120,9 +1126,41 @@
                     <span>•</span>
                     <a href="terms.html" style="color: var(--primary); text-decoration: none; margin: 0 1rem;">Terms & Conditions</a>
                 </div>
+            </div><!-- /unsubscribe-tab -->
+        </div><!-- /.card -->
+        </div><!-- /.form-col -->
+
+        <!-- Sidebar -->
+        <div class="sidebar-col">
+            <!-- Ramiya card -->
+            <div class="nova-sidebar">
+                <div class="nova-sidebar-inner">
+                    <img src="Ramiya_avatar.jpg" alt="Ramiya" class="nova-sidebar-avatar">
+                    <div class="nova-sidebar-text">
+                        <div class="nova-badge" style="margin-bottom:0.5rem">✦ AI-POWERED</div>
+                        <h2 class="nova-title">Meet <span class="nova-highlight">Ramiya</span></h2>
+                        <p class="nova-desc">Skip the form — chat with our AI assistant to set up alerts through natural conversation.</p>
+                        <a href="nova.html" class="nova-cta">
+                            <span>Chat with Ramiya</span>
+                            <span class="nova-cta-arrow">→</span>
+                        </a>
+                    </div>
+                </div>
             </div>
-        </div>
-    </div>
+            <!-- How it works -->
+            <div class="info-sidebar">
+                <strong>How it works</strong>
+                <ol>
+                    <li>Pick your railroad, line, home station, and trains.</li>
+                    <li>Enter your phone — alerts come via the free <a href="https://ntfy.sh" target="_blank" style="color:inherit;text-decoration:underline">ntfy app</a>. No SMS sent.</li>
+                    <li>We check every 2 min — delay, cancellation, and on-time alerts.</li>
+                </ol>
+                <p style="margin-top:0.5rem;padding-top:0.5rem;border-top:1px solid rgba(0,0,0,0.1);font-size:0.82rem">💡 Share your topic with family so they know you're running late.</p>
+            </div>
+        </div><!-- /.sidebar-col -->
+
+        </div><!-- /.layout-grid -->
+    </div><!-- /.container -->
 
     <script>
         // API Configuration
