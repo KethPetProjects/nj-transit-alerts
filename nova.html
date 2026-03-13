@@ -1627,8 +1627,10 @@ async function handlePostChip(opt){
 
 let _lirrStations = [];    // [{id, name}]
 let _lirrStation = null;   // {id, name}
-let _lirrMorning = null;   // train number string
-let _lirrEvening = null;   // train number string
+let _lirrMorning = null;       // train number string
+let _lirrMorningLabel = null;  // display label e.g. "9:34 AM Ronkonkoma"
+let _lirrEvening = null;       // train number string
+let _lirrEveningLabel = null;  // display label e.g. "6:02 PM Hicksville"
 
 async function handleLirr() {
   await novaSay("🚇 I can set up LIRR alerts for the Babylon, Ronkonkoma, Long Beach, Port Washington, and Port Jefferson branches. Which station are you commuting from?");
@@ -1667,7 +1669,7 @@ async function handleLirrStation(opt) {
     const data = await res.json();
     const outbound = (data.outbound||[]).slice(0, 30);
     if (!outbound.length) throw new Error('no trains');
-    showChips(outbound.map(t => ({name: `#${t.id} at ${t.time}`, code: t.id, _train: t})), handleLirrMorning);
+    showChips(outbound.map(t => ({name: `${t.time} ${t.line||''}`.trim() + ` (#${t.id})`, code: t.id, _train: t})), handleLirrMorning);
     // Store for evening train fetch
     state._lirrInbound = (data.inbound||[]).slice(0,30);
   } catch(e) {
@@ -1679,6 +1681,7 @@ async function handleLirrStation(opt) {
 async function handleLirrMorning(opt) {
   addMessage('user', opt.name);
   _lirrMorning = opt.code;
+  _lirrMorningLabel = opt.name;
   const inbound = state._lirrInbound || [];
   if (!inbound.length) {
     await novaSay("No evening trains found. Please use the main app to complete setup.");
@@ -1687,13 +1690,14 @@ async function handleLirrMorning(opt) {
   }
   await novaSay("Perfect! Now pick your evening train back from Penn Station:");
   await delay(200);
-  showChips(inbound.map(t => ({name: `#${t.id} at ${t.time}`, code: t.id})), handleLirrEvening);
+  showChips(inbound.map(t => ({name: `${t.time} ${t.destination||t.line||''}`.trim() + ` (#${t.id})`, code: t.id})), handleLirrEvening);
 }
 
 async function handleLirrEvening(opt) {
   addMessage('user', opt.name);
   _lirrEvening = opt.code;
-  await novaSay(`Looks good! ${_lirrStation.name} → Penn (Train #${_lirrMorning}) in the morning, Penn → ${_lirrStation.name} (Train #${_lirrEvening}) in the evening. What's your phone number? (needed to manage or unsubscribe)`);
+  _lirrEveningLabel = opt.name;
+  await novaSay(`Looks good! ${_lirrStation.name} → Penn (${_lirrMorningLabel}) in the morning, Penn → ${_lirrStation.name} (${_lirrEveningLabel}) in the evening. What's your phone number? (needed to manage or unsubscribe)`);
   state.step = 'lirr_phone';
   document.getElementById('userInput').placeholder = 'Your 10-digit phone number';
 }
@@ -1735,7 +1739,7 @@ async function handleLirrPhone(text) {
       return;
     }
     const topic = data.ntfy_topic || '';
-    await novaSay(`🎉 You're subscribed to LIRR ${_lirrStation.name} alerts! Your trains: #${_lirrMorning} (morning) and #${_lirrEvening} (evening from Penn).\n\nTo receive push notifications, install the free ntfy app and subscribe to your topic:`);
+    await novaSay(`🎉 You're subscribed to LIRR ${_lirrStation.name} alerts! Morning: ${_lirrMorningLabel}, Evening: ${_lirrEveningLabel}.\n\nTo receive push notifications, install the free ntfy app and subscribe to your topic:`);
     await delay(200);
     showNtfyCard(topic);
     state.step = 'post';
@@ -1839,6 +1843,7 @@ async function selectSchedule(opt){
 
 function resetState(){
   state = {...state, step:'welcome', line:null, lineName:null, station:null, stationName:null, morningTrain:null, eveningTrain:null, morningTrains:[], eveningTrains:[], phone:null, ntfy_topic:null, schedule:'weekday', allInbound:[], allTrainsData:null, unsubPhone:null, pendingSubscribeBody:null, eveningHub:null, _lirrInbound:[]};
+  _lirrStation = null; _lirrMorning = null; _lirrMorningLabel = null; _lirrEvening = null; _lirrEveningLabel = null;
   history = [];
 }
 
