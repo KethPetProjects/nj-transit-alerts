@@ -1501,7 +1501,14 @@ async function handleUnsubPhone(text){
       const sub=await res.json();
       state.unsubPhone=e164;
       // Show train details directly, then send code via ntfy
-      const fmtSub = (arr, single) => { const l=(arr&&arr.length)?arr:(single?[single]:[]); return l.map((t,i)=>i===0?`#${t}`:`+ #${t}`).join(', ')||'—'; };
+      const _unsub_labels = sub.train_labels || {};
+      const fmtSub = (arr, single) => {
+        const l=(arr&&arr.length)?arr:(single?[single]:[]);
+        return l.filter(Boolean).map((t,i)=>{
+          const lbl = _unsub_labels[t] ? `${_unsub_labels[t]} (#${t})` : `#${t}`;
+          return i===0 ? lbl : `+ ${lbl}`;
+        }).join('\n')||'—';
+      };
       const railLabel = sub.rail_system === 'LIRR' ? '🚇 LIRR' : '🚊 NJ Transit';
       await novaSay(`Found your ${railLabel} subscription:\n\n🌅 Morning: ${fmtSub(sub.morning_trains,sub.morning_train)}\n🌆 Evening: ${fmtSub(sub.evening_trains,sub.evening_train)}`);
       // Send the verification code to their ntfy topic
@@ -1557,12 +1564,24 @@ async function handleCheckSub(text){
     removeTyping();
     if(res.ok){
       const sub=await res.json();
+      const railSystem = sub.rail_system || 'NJT';
+      const railLabel = railSystem === 'LIRR' ? '🚇 LIRR' : '🚊 NJ Transit';
+      const labels = sub.train_labels || {};
+      const fmtTrain = (t, i) => {
+        const lbl = labels[t] ? `${labels[t]} (#${t})` : `#${t}`;
+        return i === 0 ? lbl : `+ ${lbl}`;
+      };
+      const fmtTrains = (arr, single) => {
+        const l = (arr && arr.length) ? arr : (single ? [single] : []);
+        return l.filter(Boolean).map(fmtTrain).join('\n') || '—';
+      };
       const card=document.createElement('div');
       card.className='summary-card';
       card.innerHTML=`
         <div class="summary-header">✦ ACTIVE SUBSCRIPTION</div>
-        <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value">${((arr,s)=>{const l=(arr&&arr.length)?arr:(s?[s]:[]);return l.map((t,i)=>i===0?`#${t}`:`+ #${t}`).join(', ')||'—'})(sub.morning_trains,sub.morning_train)}</span></div>
-        <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value">${((arr,s)=>{const l=(arr&&arr.length)?arr:(s?[s]:[]);return l.map((t,i)=>i===0?`#${t}`:`+ #${t}`).join(', ')||'—'})(sub.evening_trains,sub.evening_train)}</span></div>
+        <div class="summary-row"><span class="summary-label">RAILROAD</span><span class="summary-value">${railLabel}</span></div>
+        <div class="summary-row"><span class="summary-label">MORNING</span><span class="summary-value" style="white-space:pre-line">${fmtTrains(sub.morning_trains,sub.morning_train)}</span></div>
+        <div class="summary-row"><span class="summary-label">EVENING</span><span class="summary-value" style="white-space:pre-line">${fmtTrains(sub.evening_trains,sub.evening_train)}</span></div>
         <div class="summary-row"><span class="summary-label">STATUS</span><span class="summary-value" style="color:var(--success)">● ${sub.status?.toUpperCase()}</span></div>`;
       const railSystem = sub.rail_system || 'NJT';
       const railLabel = railSystem === 'LIRR' ? '🚇 LIRR' : '🚊 NJ Transit';
